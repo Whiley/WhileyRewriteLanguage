@@ -1,0 +1,71 @@
+<project name="wyrl" default="build">
+  <import file="../../config.xml"/>
+
+  <target name="compile-wyrl">
+    <javac debug="true" debuglevel="vars,lines,source" source="1.7" target="1.7" includeantruntime="true" classpath="${WYBS_JAR}">
+      <src path="src"/>
+      <include name="wyrl/util/WyrlAntTask.java"/>
+    </javac>
+    <taskdef name="wyrl" classname="wyrl.util.WyrlAntTask" classpath="src/:${WYBS_JAR}"/>
+    <wyrl srcdir="src/" debug="false" source="wyrl/core/Types.wyrl" output="wyrl/core/Types.java"/>
+    <javac debug="true" debuglevel="vars,lines,source" source="1.7" includeantruntime="true" classpath="${WYBS_JAR}">
+      <src path="src"/>
+      <include name="*/**"/>
+      <exclude name="*/**/package-info.java"/>
+    </javac>
+  </target>
+
+  <target name="build" depends="compile-wyrl">
+    <mkdir dir="tmp"/>
+    <manifest file="tmp/MANIFEST.MF">
+      <attribute name="Built-By" value="${user.name}"/>
+      <attribute name="Main-Class" value="wyrl.Main"/>
+      <attribute name="Implementation-Version" value="${version}"/>
+      <attribute name="Implementation-Title" value="wyrl-v${version}.jar"/>
+    </manifest>
+    <jar destfile="lib/wyrl-v${version}.jar" manifest="tmp/MANIFEST.MF">
+      <fileset dir="src" includes="*/**/*.class"/>
+    </jar>
+    <delete dir="tmp"/>
+    <echo message="============================================="/>
+    <echo message="BUILT: lib/${ant.project.name}-v${version}.jar"/>
+    <echo message="============================================="/>
+  </target>
+
+  <target name="distsrc">  
+    <mkdir dir="wyrl-v${version}"/>
+  <copy todir="wyrl-v${version}">
+    <fileset dir=".">
+      <include name="LICENSE"/>
+      <include name="README"/>
+      <include name="build.xml"/>
+      <include name="config.xml"/>
+      <include name="*/**/*.java"/>
+      <include name="*/**/*.wyrl"/>      
+      <include name="lib/*-v${version}.jar"/>
+    </fileset>
+  </copy>
+  <tar destfile="dist/wyrl-src-v${version}.tar" longfile="gnu">
+    <tarfileset dir="." includes="wyrl-v${version}/**/*"/>
+    <tarfileset dir="." filemode="755">
+      <include name="wyrl-v${version}/bin/*"/>
+    </tarfileset>
+  </tar>
+  <gzip destfile="dist/wyrl-src-v${version}.tgz" src="dist/wyrl-src-v${version}.tar"/>
+  <delete file="dist/wyrl-src-v${version}.tar"/>
+  <delete dir="wyrl-v${version}"/>
+    <echo message="============================================="/>
+    <echo message="BUILT: dist/wyrl-src-v${version}.tgz"/>
+    <echo message="============================================="/>
+  </target>
+  
+  <target name="clean">
+    <delete includeEmptyDirs="true" failonerror="false">
+      <fileset dir="." includes="**/*.class,**/*.wyil,**/*.wyasm"/>
+    </delete>
+    <echo message="============================================="/>
+    <echo message="CLEANED: ${ant.project.name}"/>
+    <echo message="============================================="/>
+  </target>
+  
+</project>
