@@ -45,3 +45,20 @@ An example session:
 
 Essentially, you type in simple type expressions and it reduces them
 as much as it can.
+
+==================================================================
+Running
+==================================================================
+
+Firstly, you need to build WyRL using ant from the top-level
+directory:
+
+> ant
+
+...
+
+> cd examples/types
+
+Then, you can run the example as follows:
+
+> java -cp .:../../lib/wybs-v0.3.34.jar:../../lib/wyrl-v0.3.34.jar Main

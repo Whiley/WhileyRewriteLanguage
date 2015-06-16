@@ -8,7 +8,6 @@ and logical NOT (!).
 
 An example session:
 
-> $ java -cp ../../src:. Main
 > Welcome!
 >
 > > false && true
@@ -59,3 +58,20 @@ An example session:
 Essentially, you type in simple logical expressions and it reduces
 them as much as it can.  In some cases, it will reduce all the way to
 "True" or "False".
+
+==================================================================
+Running
+==================================================================
+
+Firstly, you need to build WyRL using ant from the top-level
+directory:
+
+> ant
+
+...
+
+> cd examples/logic
+
+Then, you can run the example as follows:
+
+> java -cp .:../../lib/wybs-v0.3.34.jar:../../lib/wyrl-v0.3.34.jar Main

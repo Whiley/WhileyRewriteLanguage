@@ -64,3 +64,20 @@ As we can see, you type in very simple inequalities involving
 variables and/or integer constants and the algorithm performs a
 transitive closure.  In the case of an inconsistenty being found, it
 returns false; otherwise, it returns the closed set.
+
+==================================================================
+Running
+==================================================================
+
+Firstly, you need to build WyRL using ant from the top-level
+directory:
+
+> ant
+
+...
+
+> cd examples/closure
+
+Then, you can run the example as follows:
+
+> java -cp .:../../lib/wybs-v0.3.34.jar:../../lib/wyrl-v0.3.34.jar Main

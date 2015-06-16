@@ -56,3 +56,20 @@ The following inputs are known to cause problems:
 x == 1, x <= y, x != y
 
 (max out steps)
+
+==================================================================
+Running
+==================================================================
+
+Firstly, you need to build WyRL using ant from the top-level
+directory:
+
+> ant
+
+...
+
+> cd examples/arithmetic
+
+Then, you can run the example as follows:
+
+> java -cp .:../../lib/wybs-v0.3.34.jar:../../lib/wyrl-v0.3.34.jar Main

@@ -5,9 +5,72 @@ Quantifier Instantiater (by David J. Pearce 2013)
 This example illustrates a very simple system for instantiating
 quantifiers over very simple logical expressions.  An example session:
 
-> $ java -cp ../../src:. Main
 > Welcome!
 >
+> > fn(x,x) && forall X.!fn(X,X)
+> ------------------------------------
+> And{
+>         Fn["fn",Var("x"),Var("x")],
+>         ForAll[{Var("X")},Not(Fn["fn",Var("X"),Var("X")])]
+> }
+>
+> => (#activations = 5 / 307, #reductions = 1 / 4, #inferences 1 / 1)
+>
+> False
+>
+> > fn(x,y) && forall X.!fn(X,X) 
+> ------------------------------------
+> And{
+>         Fn["fn",Var("x"),Var("y")],
+>         ForAll[{Var("X")},Not(Fn["fn",Var("X"),Var("X")])]
+> }
+>
+> => (#activations = 3 / 168, #reductions = 0 / 1, #inferences 0 / 2)
+>
+> And{
+>         Fn["fn",Var("x"),Var("y")],
+>         ForAll[{Var("X")},Not(Fn["fn",Var("X"),Var("X")])]
+> }
+>
+> > fn(x,y) && forall X.(fn(x,X)==>fn(X,X))
+> ------------------------------------
+> And{
+>         Fn["fn",Var("x"),Var("y")],
+>         ForAll[{Var("X")},Or{
+>                 Fn["fn",Var("X"),Var("X")],
+>                 Not(Fn["fn",Var("x"),Var("X")])
+>         }]
+> }
+>
+> => (#activations = 55 / 3881, #reductions = 12 / 52, #inferences 1 / 3)
+>
+> And{
+>         Fn["fn",Var("x"),Var("y")],
+>         ForAll[{Var("X")},Or{
+>                 Fn["fn",Var("X"),Var("X")],
+>                 Not(Fn["fn",Var("x"),Var("X")])
+>         }],
+>         Fn["fn",Var("y"),Var("y")]
+> }
+>
+> >
 
 Essentially, you type in simple logical and quantified expressions and
 it attempts to instantiate the quantifiers as much as possible.
+
+==================================================================
+Running
+==================================================================
+
+Firstly, you need to build WyRL using ant from the top-level
+directory:
+
+> ant
+
+...
+
+> cd examples/quantifiers
+
+Then, you can run the example as follows:
+
+> java -cp .:../../lib/wybs-v0.3.34.jar:../../lib/wyrl-v0.3.34.jar Main
