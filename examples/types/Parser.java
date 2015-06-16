@@ -1,19 +1,42 @@
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
 
 import wyautl.core.Automaton;
 
 public class Parser {
 	private String input;
 	private int index;
-
+	private int dummyID = Integer.MAX_VALUE;
 	public Parser(String input) {
 		this.input = input;
 		this.index = 0;
 	}
 
 	public int parse(Automaton automaton) {
+		HashMap<String, Integer> environment = new HashMap<String, Integer>();
+		return parse(automaton,environment);
+	}
 
-		int lhs = parseAndOr(automaton);
+	public int parse(Automaton automaton, Map<String, Integer> environment) {
+		skipWhiteSpace();
+		if (index < input.length() && input.charAt(index) == '\\') {
+			match("\\");
+			String name = readWord();
+			match(".");
+			int temp = dummyID--;
+			environment.put(name, temp);
+			int actual = parseTuples(automaton, environment);
+			remap(automaton,temp,actual);
+			return actual;
+		} else {
+			return parseTuples(automaton, environment);
+		}
+	}
+
+	public int parseTuples(Automaton automaton, Map<String, Integer> environment) {
+
+		int lhs = parseAndOr(automaton,environment);
 		skipWhiteSpace();
 
 		if (index < input.length() && input.charAt(index) == ',') {
@@ -21,7 +44,7 @@ public class Parser {
 			elements.add(lhs);
 			while (index < input.length() && input.charAt(index) == ',') {
 				match(",");
-				elements.add(parseAndOr(automaton));
+				elements.add(parseAndOr(automaton,environment));
 				skipWhiteSpace();
 			}
 			int[] es = new int[elements.size()];
@@ -34,9 +57,9 @@ public class Parser {
 		return lhs;
 	}
 
-	public int parseAndOr(Automaton automaton) {
+	public int parseAndOr(Automaton automaton, Map<String, Integer> environment) {
 
-		int lhs = parseTerm(automaton);
+		int lhs = parseTerm(automaton,environment);
 		skipWhiteSpace();
 
 		if(index < input.length()) {
@@ -44,11 +67,11 @@ public class Parser {
 
 			if(lookahead == '&') {
 				match("&");
-				int rhs = parseAndOr(automaton);
+				int rhs = parseAndOr(automaton,environment);
 				lhs = Types.Intersect(automaton, lhs, rhs);
 			} else if(lookahead == '|') {
 				match("|");
-				int rhs = parseAndOr(automaton);
+				int rhs = parseAndOr(automaton,environment);
 				lhs = Types.Union(automaton, lhs, rhs);
 			}
 		}
@@ -56,30 +79,33 @@ public class Parser {
 		return lhs;
 	}
 
-	public int parseTerm(Automaton automaton) {
+	public int parseTerm(Automaton automaton, Map<String, Integer> environment) {
 		skipWhiteSpace();
 		char lookahead = input.charAt(index);
 
-		if(lookahead == '(') {
-			return parseBracketed(automaton);
-		} else if(lookahead == '!') {
+		if (lookahead == '(') {
+			return parseBracketed(automaton, environment);
+		} else if (lookahead == '!') {
 			match("!");
-			return Types.Not(automaton, parseTerm(automaton));
+			return Types.Not(automaton, parseTerm(automaton, environment));
 		} else {
 			String word = readWord();
-			if(word.equals("int")) {
+			if (word.equals("int")) {
 				return automaton.add(Types.Int);
-			} else if(word.equals("any")) {
+			} else if (word.equals("any")) {
 				return automaton.add(Types.Any);
+			} else if (environment.containsKey(word)) {
+				return environment.get(word);
 			} else {
-				throw new RuntimeException("unknown keyword: " + word);
+				throw new RuntimeException("unknown keyword or variable: "
+						+ word);
 			}
 		}
 	}
 
-	private int parseBracketed(Automaton automaton) {
+	private int parseBracketed(Automaton automaton, Map<String, Integer> environment) {
 		match("(");
-		int root = parse(automaton);
+		int root = parse(automaton,environment);
 		match(")");
 		return root;
 	}
@@ -114,6 +140,14 @@ public class Parser {
 		while (index < input.length()
 				&& (input.charAt(index) == ' ' || input.charAt(index) == '\n')) {
 			index = index + 1;
+		}
+	}
+
+	private void remap(Automaton automaton, int from, int to) {
+		for(int i=0;i!=automaton.nStates();++i) {
+			System.out.println("BEFORE: " + automaton.get(i));
+			automaton.get(i).remap(from,to);
+			System.out.println("AFTER: " + automaton.get(i));
 		}
 	}
 
