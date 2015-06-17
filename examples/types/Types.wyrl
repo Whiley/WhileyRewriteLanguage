@@ -95,17 +95,20 @@ reduce Union{Union{Type... xs}, Type... ys}:
 
 term Tuple[Type...]
 
-// this rule is BROKEN!
+// This rule is broken because it does not preserve the ordering of
+// tuple elements.
 reduce Tuple{Intersect{Type... xs}, Type... rest}:
     => let ys = { Tuple(x ++ rest) | x in xs }
        in Intersect(ys)
 
-// this rule is BROKEN!
+// This rule is broken because it does not preserve the ordering of
+// tuple elements.
 reduce Tuple{Union{Type... xs}, Type... rest}:
     => let ys = { Tuple(x ++ rest) | x in xs }
        in Union(ys)
 
-// this rule is BROKEN!
+// This rule is broken because it does not preserve the ordering of
+// tuple elements.
 reduce Tuple{Not(Type t), Type... rest}:
     => let pos = Tuple(Any ++ rest),
            neg = Not(Tuple(t ++ rest))

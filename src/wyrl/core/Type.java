@@ -30,6 +30,10 @@ import java.io.IOException;
 
 import wyautl.core.*;
 import wyautl.io.BinaryAutomataWriter;
+import wyautl.rw.InferenceRule;
+import wyautl.rw.IterativeRewriter;
+import wyautl.rw.ReductionRule;
+import wyautl.rw.SimpleRewriteStrategy;
 import wyfs.io.BinaryOutputStream;
 import static wyrl.core.Types.*;
 
@@ -741,9 +745,9 @@ public abstract class Type {
 	 * @return
 	 */
 	public boolean isSubtype(Type t) {
-//		Type result = Type.T_AND(Type.T_NOT(this),t);
-//		Types.reduce(result.automaton);
-//		boolean r1 = result.equals(Type.T_VOID());
+		Type result = Type.T_AND(Type.T_NOT(this),t);
+		reduce(result.automaton);
+		return result.equals(Type.T_VOID());
 //		boolean r2 = isSubtype(this,t,10);
 //		if(!r1 && r2) {
 //			System.err.println("REDUCTION APPROACH FAILED FOR: " + this + " :> " + t + " (" + result + ")");
@@ -752,7 +756,7 @@ public abstract class Type {
 //		}
 //
 //		return r1 || r2;
-		return isSubtype(this,t,10);
+//		return isSubtype(this,t,10);
 	}
 
 
@@ -983,6 +987,21 @@ public abstract class Type {
 		default:
 			throw new IllegalArgumentException("Unknown kind encountered - " + state.kind);
 		}
+	}
+	
+	/**
+	 * Reduce a type by applying all possible rewrites.
+	 * 
+	 * @param t
+	 */
+	private static void reduce(Automaton automaton) {
+		IterativeRewriter.Strategy<InferenceRule> inferenceStrategy = new SimpleRewriteStrategy<InferenceRule>(
+				automaton, inferences);
+		IterativeRewriter.Strategy<ReductionRule> reductionStrategy = new SimpleRewriteStrategy<ReductionRule>(
+				automaton, reductions);
+		IterativeRewriter rw = new IterativeRewriter(automaton,
+				inferenceStrategy, reductionStrategy, SCHEMA);
+		rw.apply();
 	}
 
 	/**

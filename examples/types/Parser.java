@@ -19,22 +19,6 @@ public class Parser {
 	}
 
 	public int parse(Automaton automaton, Map<String, Integer> environment) {
-		skipWhiteSpace();
-		if (index < input.length() && input.charAt(index) == '\\') {
-			match("\\");
-			String name = readWord();
-			match(".");
-			int temp = dummyID--;
-			environment.put(name, temp);
-			int actual = parseTuples(automaton, environment);
-			remap(automaton,temp,actual);
-			return actual;
-		} else {
-			return parseTuples(automaton, environment);
-		}
-	}
-
-	public int parseTuples(Automaton automaton, Map<String, Integer> environment) {
 
 		int lhs = parseAndOr(automaton,environment);
 		skipWhiteSpace();
@@ -88,7 +72,9 @@ public class Parser {
 		} else if (lookahead == '!') {
 			match("!");
 			return Types.Not(automaton, parseTerm(automaton, environment));
-		} else {
+		} else if(lookahead == '\\') {
+			return parseRecursive(automaton,environment);			
+		} else {	
 			String word = readWord();
 			if (word.equals("int")) {
 				return automaton.add(Types.Int);
@@ -110,6 +96,17 @@ public class Parser {
 		return root;
 	}
 
+	public int parseRecursive(Automaton automaton, Map<String, Integer> environment) {
+		match("\\");
+		String name = readWord();
+		match(".");
+		int temp = dummyID--;
+		environment.put(name, temp);
+		int actual = parse(automaton, environment);
+		remap(automaton,temp,actual);
+		return actual;
+	}
+	
 	private String readWord() {
 		int start = index;
 		while (index < input.length()
@@ -145,9 +142,7 @@ public class Parser {
 
 	private void remap(Automaton automaton, int from, int to) {
 		for(int i=0;i!=automaton.nStates();++i) {
-			System.out.println("BEFORE: " + automaton.get(i));
 			automaton.get(i).remap(from,to);
-			System.out.println("AFTER: " + automaton.get(i));
 		}
 	}
 
