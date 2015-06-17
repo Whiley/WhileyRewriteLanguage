@@ -27,6 +27,7 @@ An example session:
 >
 > Any
 >
+>
 > > !int&int
 > ------------------------------------
 > Intersect{Int,Not(Int)}
@@ -35,13 +36,32 @@ An example session:
 >
 > Not(Any)
 >
-> > (int|(int,int))&!int
+>
+> (int|(int,int))&!int
 > ------------------------------------
-> Intersect{Union{Int,Tuple[Int,Int]},Not(Int)}
+> Intersect{Union{Int,Pair[Int,Int]},Not(Int)}
 >
 > ==> (30 steps)
 >
-> Tuple[Int,Int]
+> Pair[Int,Int]
+>
+>
+> (int,\X.(int|(int,X)))
+> ------------------------------------
+> $1<Pair[Int,Union{Int,$1}]>
+>
+> => (#activations = 0 / 36, #reductions = 0 / 0, #inferences 0 / 0)
+>
+> $1<Pair[Int,Union{Int,$1}]>
+>
+>
+> \X.(int,(int,(int,X)))
+> ------------------------------------
+> $5<Pair[Int,Pair[Int,Pair[Int,$5]]]>
+>
+> => (#activations = 0 / 18, #reductions = 0 / 0, #inferences 0 / 0)
+>
+> $1<Pair[Int,$1]>
 
 Essentially, you type in simple type expressions and it reduces them
 as much as it can.

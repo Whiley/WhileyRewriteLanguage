@@ -41,11 +41,8 @@ reduce Intersect{Not(Any), Type... xs}:
 reduce Intersect{Any, Type... xs}:
     => Intersect (xs), if |xs| > 0
 
-reduce Intersect{Int, Tuple y, Type... ys}:
+reduce Intersect{Int, Pair y, Type... ys}:
     => Not(Any)
-
-reduce Intersect{Tuple[Type... xs], Tuple[Type... ys], Type... zs}:
-    => Not(Any), if |xs| != |ys|
 
 reduce Intersect{Intersect{Type... xs}, Type... ys}:
     => Intersect (xs ++ ys)
@@ -57,15 +54,11 @@ reduce Intersect{Union{Type... xs}, Type... ys}:
     => let ys = { Intersect(x ++ ys) | x in xs }
        in Union(ys)
 
-reduce Intersect{Int x, Not(Tuple[Type...]), Type... rest}:
+reduce Intersect{Int x, Not(Pair), Type... rest}:
     => Intersect (x ++ rest)
 
-reduce Intersect{Tuple x, Not(Int), Type... rest}:
+reduce Intersect{Pair x, Not(Int), Type... rest}:
     => Intersect (x ++ rest)
-
-reduce Intersect{Tuple[Type... xs] t, Not(Tuple[Type... ys]), Type... rest}:
-    => Intersect (t ++ rest), if |xs| != |ys|
-// FIXME: missing case here when |xs| == |ys|
 
 // ====================================================================
 // Union
@@ -90,29 +83,14 @@ reduce Union{Union{Type... xs}, Type... ys}:
     => Union (xs ++ ys)
 
 // ====================================================================
-// Tuple
+// Pairt
 // ====================================================================
 
-term Tuple[Type...]
+term Pair[Type,Type]
 
-// This rule is broken because it does not preserve the ordering of
-// tuple elements.
-reduce Tuple{Intersect{Type... xs}, Type... rest}:
-    => let ys = { Tuple(x ++ rest) | x in xs }
-       in Intersect(ys)
-
-// This rule is broken because it does not preserve the ordering of
-// tuple elements.
-reduce Tuple{Union{Type... xs}, Type... rest}:
-    => let ys = { Tuple(x ++ rest) | x in xs }
-       in Union(ys)
-
-// This rule is broken because it does not preserve the ordering of
-// tuple elements.
-reduce Tuple{Not(Type t), Type... rest}:
-    => let pos = Tuple(Any ++ rest),
-           neg = Not(Tuple(t ++ rest))
-       in Intersect {pos,neg}
+reduce Pair[Union{Type... xs}, Type other]:
+     => let ys = { Pair[x,other] | x in xs }
+        in Union(ys)
 
 // ====================================================================
 // Type
@@ -121,7 +99,7 @@ reduce Tuple{Not(Type t), Type... rest}:
 term Any
 term Int
 
-define Type as Any | Int | Not | Intersect | Tuple | Union
+define Type as Any | Int | Not | Intersect | Pair | Union
 
 
 

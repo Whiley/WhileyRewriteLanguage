@@ -24,18 +24,9 @@ public class Parser {
 		skipWhiteSpace();
 
 		if (index < input.length() && input.charAt(index) == ',') {
-			ArrayList<Integer> elements = new ArrayList<Integer>();
-			elements.add(lhs);
-			while (index < input.length() && input.charAt(index) == ',') {
-				match(",");
-				elements.add(parseAndOr(automaton,environment));
-				skipWhiteSpace();
-			}
-			int[] es = new int[elements.size()];
-			for (int i = 0; i != es.length; ++i) {
-				es[i] = elements.get(i);
-			}
-			lhs = Types.Tuple(automaton, es);
+			match(",");
+			int rhs = parseAndOr(automaton,environment);			
+			lhs = Types.Pair(automaton, lhs, rhs);
 		}
 
 		return lhs;

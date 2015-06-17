@@ -92,7 +92,9 @@ public class TypeInference {
 
 		HashMap<String,Type> environment = new HashMap<String,Type>();
 
-		infer(rd.pattern,environment);
+		Type.Ref thisType = infer(rd.pattern,environment);
+		// The "this" variable can be used to access the outermost rule.
+		environment.put("this",thisType);
 
 		for(SpecFile.RuleDecl rule : rd.rules) {
 			infer(rule,environment);

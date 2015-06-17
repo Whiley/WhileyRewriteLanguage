@@ -745,9 +745,9 @@ public abstract class Type {
 	 * @return
 	 */
 	public boolean isSubtype(Type t) {
-		Type result = Type.T_AND(Type.T_NOT(this),t);
-		reduce(result.automaton);
-		return result.equals(Type.T_VOID());
+//		Type result = Type.T_AND(Type.T_NOT(this),t);
+//		reduce(result.automaton);
+//		return result.equals(Type.T_VOID());
 //		boolean r2 = isSubtype(this,t,10);
 //		if(!r1 && r2) {
 //			System.err.println("REDUCTION APPROACH FAILED FOR: " + this + " :> " + t + " (" + result + ")");
@@ -756,7 +756,7 @@ public abstract class Type {
 //		}
 //
 //		return r1 || r2;
-//		return isSubtype(this,t,10);
+		return isSubtype(this,t,10);
 	}
 
 
