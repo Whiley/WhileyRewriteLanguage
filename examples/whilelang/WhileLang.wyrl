@@ -11,40 +11,97 @@ define Value as Num | Bool
 // Expressions
 // ====================================================================
 term Var(string)
-term Sub[Expr,Expr]
-term Add[Expr,Expr]
-term Mul[Expr,Expr]
-term Div[Expr,Expr]
+term Sub[RExpr,RExpr]
+term Add[RExpr,RExpr]
+term Mul[RExpr,RExpr]
+term Div[RExpr,RExpr]
 
 define Expr as Value | Var | Sub | Add | Mull | Div
+define RExpr as Expr | State[Env,Expr]
+
+// R-Var
+reduce State[Env{[Var v1, Value r], [Var,Value]...}, Var v2]:
+    => r, if v1 == v2
+
+// R-Add
+reduce State[Env e, Add[Num(int n1),Num(int n2)]]:
+    => Num(n1+n2)
+
+reduce State[Env e, Add[Expr e1, Expr e2]]:
+    => State[e,Add[State[e,e1],e2]], if !(e1 is Value)
+
+reduce State[Env e, Add[Num n, Expr e2]]:
+    => State[e,Add[n,State[e,e2]]], if !(e2 is Value)
+
+// R-Sub
+reduce State[Env e, Sub[Num(int n1),Num(int n2)]]:
+    => Num(n1-n2)
+
+reduce State[Env e, Sub[Expr e1, Expr e2]]:
+    => State[e,Sub[State[e,e1],e2]], if !(e1 is Value)
+
+reduce State[Env e, Sub[Num n, Expr e2]]:
+    => State[e,Sub[n,State[e,e2]]], if !(e2 is Value)
+
+// R-Mul
+reduce State[Env e, Mul[Num(int n1),Num(int n2)]]:
+    => Num(n1 * n2)
+
+reduce State[Env e, Mul[Expr e1, Expr e2]]:
+    => State[e,Mul[State[e,e1],e2]], if !(e1 is Value)
+
+reduce State[Env e, Mul[Num n, Expr e2]]:
+    => State[e,Mul[n,State[e,e2]]], if !(e2 is Value)
+
+// R-Div
+reduce State[Env e, Div[Num(int n1),Num(int n2)]]:
+    => Num(n1/n2), if n2 != 0
+
+reduce State[Env e, Div[Expr e1, Expr e2]]:
+    => State[e,Div[State[e,e1],e2]], if !(e1 is Value)
+
+reduce State[Env e, Div[Num n, Expr e2]]:
+    => State[e,Div[n,State[e,e2]]], if !(e2 is Value)
 
 // ====================================================================
 // Statements
 // ====================================================================
-term Assign[Var,Expr]
-term Return(Expr)
+term Assign[Var,RExpr]
+term Return(RExpr)
+term Skip
 
-define Stmt as Assign | Return
+define Stmt as Skip | Assign | Return
+define RStmt as Stmt | State[Env,Stmt]
+
+// R-Return1,2
+reduce State[Env e, Return(Expr r)]:
+    => State[e,r], if r is Value
+    => State[e,Return(State[e,r])]
+
+// R-Assign1
+reduce State[Env{[Var,Value]... ps}, Assign[Var v, Value n]]:
+    => let ws = { [p[0],p[1]] | p in ps, p[0] != v }
+       in State[Env(ws ++ {[v,n]}), Skip]
+
+// R-Assign2
+reduce State[Env e, Assign[Var v, Expr r]]:
+    => State[e,Assign[v,State[e,r]]], if !(r is Value)
 
 // ====================================================================
-// Semantics
+// Operational Semantics
 // ====================================================================
 term Env{[Var,Value]...}
 term Program[Stmt...]
+define Reducible as Program|Stmt|Expr
 
-term State[Env,Program]
+term State[Env,Reducible]
 
-// R-Return1
-reduce State[Env, Program[Return(Value v),Stmt... rest]]:
+// Block Reductions
+reduce State[Env e, Program[Stmt s,Stmt... rest]]:
+     => State[e,rest], if s is Skip
+     => State[e, Program([State[e,s]] ++ rest)]
+
+reduce State[Env, Program[State[Env,Value v], Stmt... rest]]:
      => v
-
-// R-Return2 ?
-
-// R-Assign1
-reduce State[Env{[Var,Value]... ps}, Program[Assign[Var v, Value n],Stmt... rest]]:
-    => let ws = { [p[0],p[1]] | p in ps, p[0] != v }
-       in State[Env(ws ++ {[v,n]}), rest]
-
-// R-Assign2 ?
 
 
