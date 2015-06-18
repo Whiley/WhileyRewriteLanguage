@@ -1,0 +1,50 @@
+// ====================================================================
+// Values
+// ====================================================================
+term Num(int)
+term False
+term True
+define Bool as True|False
+define Value as Num | Bool
+
+// ====================================================================
+// Expressions
+// ====================================================================
+term Var(string)
+term Sub[Expr,Expr]
+term Add[Expr,Expr]
+term Mul[Expr,Expr]
+term Div[Expr,Expr]
+
+define Expr as Value | Var | Sub | Add | Mull | Div
+
+// ====================================================================
+// Statements
+// ====================================================================
+term Assign[Var,Expr]
+term Return(Expr)
+
+define Stmt as Assign | Return
+
+// ====================================================================
+// Semantics
+// ====================================================================
+term Env{[Var,Value]...}
+term Program[Stmt...]
+
+term State[Env,Program]
+
+// R-Return1
+reduce State[Env, Program[Return(Value v),Stmt... rest]]:
+     => v
+
+// R-Return2 ?
+
+// R-Assign1
+reduce State[Env{[Var,Value]... ps}, Program[Assign[Var v, Value n],Stmt... rest]]:
+    => let ws = { [p[0],p[1]] | p in ps, p[0] != v }
+       in State[Env(ws ++ {[v,n]}), rest]
+
+// R-Assign2 ?
+
+

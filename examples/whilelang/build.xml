@@ -1,0 +1,17 @@
+<project name="wyrl" default="build">
+  <import file="../../config.xml"/>
+  
+  <target name="build">
+    <taskdef name="wyrl" classname="wyrl.util.WyrlAntTask" classpath="../../src/:../../${WYBS_JAR}"/>
+    <wyrl srcdir="." debug="false" source="WhileLang.wyrl" output="WhileLang.java"/>
+    <javac debug="true" debuglevel="vars,lines,source" srcdir="." source="1.7" target="1.7" includeantruntime="false" classpath="../../src/">
+      <include name="*/**"/>
+    </javac>
+  </target>
+
+ <target name="clean">
+   <delete failonerror="false">
+     <fileset dir="." includes="*.class,WhileLang.java"/>
+   </delete>
+ </target>
+</project>
