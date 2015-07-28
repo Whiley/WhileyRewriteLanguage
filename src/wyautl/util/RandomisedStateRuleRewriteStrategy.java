@@ -23,14 +23,20 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-package wyautl.rw;
+package wyautl.util;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Comparator;
+import java.util.Random;
 
 import wyautl.core.Automaton;
 import wyautl.core.Schema;
+import wyautl.rw.Activation;
+import wyautl.rw.RewriteRule;
+import wyautl.rw.RewriteRule.RankComparator;
+import wyautl.util.IterativeRewriter.Strategy;
 import wyrl.core.Pattern;
 
 /**
@@ -50,7 +56,9 @@ import wyrl.core.Pattern;
  * @author David J. Pearce
  *
  */
-public final class UnfairStateRuleRewriteStrategy<T extends RewriteRule> extends IterativeRewriter.Strategy<T> {
+public final class RandomisedStateRuleRewriteStrategy<T extends RewriteRule> extends IterativeRewriter.Strategy<T> {
+
+	private static final Random random = new Random(System.currentTimeMillis());
 
 	/**
 	 * The static dispatch table
@@ -73,18 +81,24 @@ public final class UnfairStateRuleRewriteStrategy<T extends RewriteRule> extends
 	private int current;
 
 	/**
+	 *
+	 */
+	private ArrayList<Integer> order;
+
+	/**
 	 * Record the number of probes for statistical reporting purposes
 	 */
 	private int numProbes;
 
-	public UnfairStateRuleRewriteStrategy(Automaton automaton, T[] rules, Schema schema) {
+	public RandomisedStateRuleRewriteStrategy(Automaton automaton, T[] rules, Schema schema) {
 		this(automaton, rules, schema,new RewriteRule.RankComparator());
 	}
 
-	public UnfairStateRuleRewriteStrategy(Automaton automaton, T[] rules,
+	public RandomisedStateRuleRewriteStrategy(Automaton automaton, T[] rules,
 			Schema schema, Comparator<RewriteRule> comparator) {
 		this.automaton = automaton;
 		this.dispatchTable = constructDispatchTable(rules,schema,comparator);
+		this.order = constructRandomOrder();
 	}
 
 	@Override
@@ -92,16 +106,17 @@ public final class UnfairStateRuleRewriteStrategy<T extends RewriteRule> extends
 		int nStates = automaton.nStates();
 
 		while (current < nStates && worklist.size() == 0) {
+			int index = order.get(current);
 			// Check whether state is reachable and that it's a term. This is
 			// because only reachable states should be rewritten; and, only
 			// terms can be roots of rewrite rules.
-			if (reachable[current]) {
-				Automaton.State state = automaton.get(current);
+			if (reachable[index]) {
+				Automaton.State state = automaton.get(index);
 				if (state instanceof Automaton.Term) {
 					RewriteRule[] rules = dispatchTable[state.kind];
 					for (int j = 0; j != rules.length; ++j) {
 						RewriteRule rw = rules[j];
-						rw.probe(automaton, current, worklist);
+						rw.probe(automaton, index, worklist);
 						numProbes++;
 					}
 				}
@@ -121,6 +136,7 @@ public final class UnfairStateRuleRewriteStrategy<T extends RewriteRule> extends
 
 	@Override
 	protected void reset() {
+		order = constructRandomOrder();
 		worklist.clear();
 		current = 0;
 	}
@@ -128,6 +144,15 @@ public final class UnfairStateRuleRewriteStrategy<T extends RewriteRule> extends
 	@Override
 	public int numProbes() {
 		return numProbes;
+	}
+
+	private ArrayList<Integer> constructRandomOrder() {
+		ArrayList<Integer> r = new ArrayList<Integer>();
+		for(int i=0;i!=automaton.nStates();++i) {
+			r.add(i);
+		}
+		Collections.shuffle(r,random);
+		return r;
 	}
 
 	private static RewriteRule[][] constructDispatchTable(RewriteRule[] rules,

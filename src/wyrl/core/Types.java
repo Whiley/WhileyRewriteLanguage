@@ -3,7 +3,10 @@ package wyrl.core;
 import java.io.*;
 import java.util.*;
 import java.math.BigInteger;
+
 import wyautl.util.BigRational;
+import wyautl.util.IterativeRewriter;
+import wyautl.util.SimpleRewriteStrategy;
 import wyautl.io.*;
 import wyautl.core.*;
 import wyautl.rw.*;

@@ -23,7 +23,7 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-package wyautl.rw;
+package wyautl.util;
 
 import java.util.Arrays;
 import java.util.Comparator;
@@ -34,7 +34,12 @@ import wyautl.core.Automata;
 import wyautl.core.Automaton;
 import wyautl.core.Schema;
 import wyautl.core.Automaton.State;
-import wyautl.rw.IterativeRewriter.Result;
+import wyautl.rw.Activation;
+import wyautl.rw.InferenceRule;
+import wyautl.rw.ReductionRule;
+import wyautl.rw.RewriteRule;
+import wyautl.rw.Rewriter;
+import wyautl.util.IterativeRewriter.Result;
 
 /**
  * An implementation of <code>wyrl.rw.Rewriter</code> which utilises the

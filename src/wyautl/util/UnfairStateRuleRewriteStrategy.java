@@ -23,7 +23,7 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-package wyautl.rw;
+package wyautl.util;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -31,14 +31,20 @@ import java.util.Comparator;
 
 import wyautl.core.Automaton;
 import wyautl.core.Schema;
+import wyautl.rw.Activation;
+import wyautl.rw.RewriteRule;
+import wyautl.rw.RewriteRule.RankComparator;
+import wyautl.util.IterativeRewriter.Strategy;
+import wyrl.core.Pattern;
 
 /**
  * <p>
- * A naive implementation of <code>RewriteSystem</code> which works correctly,
- * but is not efficient. This simply loops through every state and trys every
- * rule until one successfully activates. Then, it repeats until there are no
- * more activations. This is not efficient because it can result in a very high
- * number of unnecessary probes.
+ * A simple implementation of <code>StrategyRewriter.Strategy</code> which aims
+ * to be more efficient that <code>SimpleRewriter</code>. Specifically, it
+ * attempts to cut down the number of probes by using a <i>static dispatch
+ * table</i>. This table is precomputed when the rewriter is constructed, and
+ * maps every automaton state kind to the list of rules which could potentially
+ * match that kind.
  * </p>
  *
  * <p>
@@ -48,12 +54,12 @@ import wyautl.core.Schema;
  * @author David J. Pearce
  *
  */
-public final class SimpleRewriteStrategy<T extends RewriteRule> extends IterativeRewriter.Strategy<T> {
+public final class UnfairStateRuleRewriteStrategy<T extends RewriteRule> extends IterativeRewriter.Strategy<T> {
 
 	/**
-	 * The list of available rewrite rules.
+	 * The static dispatch table
 	 */
-	private final RewriteRule[] rules;
+	private final RewriteRule[][] dispatchTable;
 
 	/**
 	 * Temporary list of inference activations used.
@@ -75,15 +81,14 @@ public final class SimpleRewriteStrategy<T extends RewriteRule> extends Iterativ
 	 */
 	private int numProbes;
 
-	public SimpleRewriteStrategy(Automaton automaton, T[] rules) {
-		this(automaton, rules, new RewriteRule.RankComparator());
+	public UnfairStateRuleRewriteStrategy(Automaton automaton, T[] rules, Schema schema) {
+		this(automaton, rules, schema,new RewriteRule.RankComparator());
 	}
 
-	public SimpleRewriteStrategy(Automaton automaton, T[] rules,
-			Comparator<RewriteRule> comparator) {
+	public UnfairStateRuleRewriteStrategy(Automaton automaton, T[] rules,
+			Schema schema, Comparator<RewriteRule> comparator) {
 		this.automaton = automaton;
-		this.rules = Arrays.copyOf(rules,rules.length);
-		Arrays.sort(this.rules, comparator);
+		this.dispatchTable = constructDispatchTable(rules,schema,comparator);
 	}
 
 	@Override
@@ -94,12 +99,15 @@ public final class SimpleRewriteStrategy<T extends RewriteRule> extends Iterativ
 			// Check whether state is reachable and that it's a term. This is
 			// because only reachable states should be rewritten; and, only
 			// terms can be roots of rewrite rules.
-			if (reachable[current]
-					&& automaton.get(current) instanceof Automaton.Term) {
-				for (int j = 0; j != rules.length; ++j) {
-					RewriteRule rw = rules[j];
-					rw.probe(automaton, current, worklist);
-					numProbes++;
+			if (reachable[current]) {
+				Automaton.State state = automaton.get(current);
+				if (state instanceof Automaton.Term) {
+					RewriteRule[] rules = dispatchTable[state.kind];
+					for (int j = 0; j != rules.length; ++j) {
+						RewriteRule rw = rules[j];
+						rw.probe(automaton, current, worklist);
+						numProbes++;
+					}
 				}
 			}
 			current = current + 1;
@@ -124,5 +132,25 @@ public final class SimpleRewriteStrategy<T extends RewriteRule> extends Iterativ
 	@Override
 	public int numProbes() {
 		return numProbes;
+	}
+
+	private static RewriteRule[][] constructDispatchTable(RewriteRule[] rules,
+			Schema schema, Comparator<RewriteRule> comparator) {
+		RewriteRule[][] table = new RewriteRule[schema.size()][];
+		for (int i = 0; i != table.length; ++i) {
+			Schema.Term term = schema.get(i);
+			ArrayList<RewriteRule> tmp = new ArrayList<RewriteRule>();
+			for (int j = 0; j != rules.length; ++j) {
+				RewriteRule ir = rules[j];
+				Pattern.Term pt = ir.pattern();
+				if (pt.name.equals(term.name)) {
+					tmp.add(ir);
+				}
+			}
+			RewriteRule[] rs = tmp.toArray(new RewriteRule[tmp.size()]);
+			Arrays.sort(rs, comparator);
+			table[i] = rs;
+		}
+		return table;
 	}
 }

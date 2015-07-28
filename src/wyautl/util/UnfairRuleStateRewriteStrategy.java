@@ -23,7 +23,7 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-package wyautl.rw;
+package wyautl.util;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -31,16 +31,16 @@ import java.util.Comparator;
 
 import wyautl.core.Automaton;
 import wyautl.core.Schema;
-import wyrl.core.Pattern;
+import wyautl.rw.Activation;
+import wyautl.rw.RewriteRule;
+import wyautl.rw.RewriteRule.MinComparator;
+import wyautl.util.IterativeRewriter.Strategy;
 
 /**
  * <p>
- * A simple implementation of <code>StrategyRewriter.Strategy</code> which aims
- * to be more efficient that <code>SimpleRewriter</code>. Specifically, it
- * attempts to cut down the number of probes by using a <i>static dispatch
- * table</i>. This table is precomputed when the rewriter is constructed, and
- * maps every automaton state kind to the list of rules which could potentially
- * match that kind.
+ * A simple implementation of <code>StrategyRewriter.Strategy</code> which
+ * prioritises rules over states. That is, it attempts a given rule on all
+ * states, as opposed to all rules on a given state.
  * </p>
  *
  * <p>
@@ -50,10 +50,10 @@ import wyrl.core.Pattern;
  * @author David J. Pearce
  *
  */
-public final class FairStateRuleRewriteStrategy<T extends RewriteRule> extends IterativeRewriter.Strategy<T> {
+public final class UnfairRuleStateRewriteStrategy<T extends RewriteRule> extends IterativeRewriter.Strategy<T> {
 
 	/**
-	 * The static dispatch table
+	 * The list of available rewrite rules.
 	 */
 	private final RewriteRule[] rules;
 
@@ -68,49 +68,43 @@ public final class FairStateRuleRewriteStrategy<T extends RewriteRule> extends I
 	private final Automaton automaton;
 
 	/**
-	 * Starting state on the current round.
+	 * The current rule being explored by this strategy
 	 */
-	private int startStep;
-
-	/**
-	 * The current state being explored by this strategy
-	 */
-	private int currentStep;
+	private int current;
 
 	/**
 	 * Record the number of probes for statistical reporting purposes
 	 */
 	private int numProbes;
 
-	public FairStateRuleRewriteStrategy(Automaton automaton, T[] rules, Schema schema) {
-		this(automaton, rules, schema,new RewriteRule.RankComparator());
+	public UnfairRuleStateRewriteStrategy(Automaton automaton, T[] rules) {
+		this(automaton, rules, new RewriteRule.MinComparator());
 	}
 
-	public FairStateRuleRewriteStrategy(Automaton automaton, T[] rules,
-			Schema schema, Comparator<RewriteRule> comparator) {
+	public UnfairRuleStateRewriteStrategy(Automaton automaton, T[] rules,
+			Comparator<RewriteRule> comparator) {
 		this.automaton = automaton;
 		this.rules = Arrays.copyOf(rules,rules.length);
-		Arrays.sort(this.rules,comparator);
-		this.startStep = Math.max(0,(automaton.nStates() * rules.length) - 1);
+		Arrays.sort(this.rules, comparator);
 	}
 
 	@Override
 	protected Activation next(boolean[] reachable) {
 		int nStates = automaton.nStates();
-		int maxStep = nStates * rules.length;
 
-		while (currentStep != startStep && worklist.size() == 0) {
-			int stateRef = currentStep / rules.length;
-			int rule = currentStep % rules.length;
-
-			if (reachable[stateRef]) {
-				Automaton.State state = automaton.get(stateRef);
-				if (state instanceof Automaton.Term) {
-					rules[rule].probe(automaton, stateRef, worklist);
+		while (current < rules.length && worklist.size() == 0) {
+			// Check whether state is reachable and that it's a term. This is
+			// because only reachable states should be rewritten; and, only
+			// terms can be roots of rewrite rules.
+			RewriteRule rw = rules[current];
+			for(int i=0;i!=nStates;++i) {
+				if (reachable[i]
+						&& automaton.get(i) instanceof Automaton.Term) {
+					rw.probe(automaton, i, worklist);
 					numProbes++;
 				}
 			}
-			currentStep = (currentStep + 1) % maxStep;
+			current = current + 1;
 		}
 
 		if (worklist.size() > 0) {
@@ -125,18 +119,8 @@ public final class FairStateRuleRewriteStrategy<T extends RewriteRule> extends I
 
 	@Override
 	protected void reset() {
-		int nStates = automaton.nStates();
-		int maxStep = nStates * rules.length;
 		worklist.clear();
-		if(maxStep == 0) {
-			startStep = 0;
-			currentStep = 0;
-		} else if(currentStep == 0) {
-			startStep = maxStep - 1;
-		} else {
-			currentStep = Math.min(maxStep-1,currentStep);
-			startStep = currentStep - 1;
-		}
+		current = 0;
 	}
 
 	@Override

@@ -23,20 +23,25 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-package wyautl.rw;
+package wyautl.util;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
+
 import wyautl.core.Automaton;
 import wyautl.core.Schema;
+import wyautl.rw.Activation;
 import wyautl.rw.RewriteRule;
+import wyautl.rw.RewriteRule.RankComparator;
 
 /**
  * <p>
- * A simple implementation of <code>StrategyRewriter.Strategy</code> which
- * prioritises rules over states. That is, it attempts a given rule on all
- * states, as opposed to all rules on a given state.
+ * A naive implementation of <code>RewriteSystem</code> which works correctly,
+ * but is not efficient. This simply loops through every state and trys every
+ * rule until one successfully activates. Then, it repeats until there are no
+ * more activations. This is not efficient because it can result in a very high
+ * number of unnecessary probes.
  * </p>
  *
  * <p>
@@ -46,7 +51,7 @@ import wyautl.rw.RewriteRule;
  * @author David J. Pearce
  *
  */
-public final class UnfairRuleStateRewriteStrategy<T extends RewriteRule> extends IterativeRewriter.Strategy<T> {
+public final class SimpleRewriteStrategy<T extends RewriteRule> extends IterativeRewriter.Strategy<T> {
 
 	/**
 	 * The list of available rewrite rules.
@@ -64,7 +69,7 @@ public final class UnfairRuleStateRewriteStrategy<T extends RewriteRule> extends
 	private final Automaton automaton;
 
 	/**
-	 * The current rule being explored by this strategy
+	 * The current state being explored by this strategy
 	 */
 	private int current;
 
@@ -73,11 +78,11 @@ public final class UnfairRuleStateRewriteStrategy<T extends RewriteRule> extends
 	 */
 	private int numProbes;
 
-	public UnfairRuleStateRewriteStrategy(Automaton automaton, T[] rules) {
-		this(automaton, rules, new RewriteRule.MinComparator());
+	public SimpleRewriteStrategy(Automaton automaton, T[] rules) {
+		this(automaton, rules, new RewriteRule.RankComparator());
 	}
 
-	public UnfairRuleStateRewriteStrategy(Automaton automaton, T[] rules,
+	public SimpleRewriteStrategy(Automaton automaton, T[] rules,
 			Comparator<RewriteRule> comparator) {
 		this.automaton = automaton;
 		this.rules = Arrays.copyOf(rules,rules.length);
@@ -88,15 +93,15 @@ public final class UnfairRuleStateRewriteStrategy<T extends RewriteRule> extends
 	protected Activation next(boolean[] reachable) {
 		int nStates = automaton.nStates();
 
-		while (current < rules.length && worklist.size() == 0) {
+		while (current < nStates && worklist.size() == 0) {
 			// Check whether state is reachable and that it's a term. This is
 			// because only reachable states should be rewritten; and, only
 			// terms can be roots of rewrite rules.
-			RewriteRule rw = rules[current];
-			for(int i=0;i!=nStates;++i) {
-				if (reachable[i]
-						&& automaton.get(i) instanceof Automaton.Term) {
-					rw.probe(automaton, i, worklist);
+			if (reachable[current]
+					&& automaton.get(current) instanceof Automaton.Term) {
+				for (int j = 0; j != rules.length; ++j) {
+					RewriteRule rw = rules[j];
+					rw.probe(automaton, current, worklist);
 					numProbes++;
 				}
 			}

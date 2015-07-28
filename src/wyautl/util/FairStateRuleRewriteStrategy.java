@@ -23,16 +23,18 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-package wyautl.rw;
+package wyautl.util;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.Comparator;
-import java.util.Random;
 
 import wyautl.core.Automaton;
 import wyautl.core.Schema;
+import wyautl.rw.Activation;
+import wyautl.rw.RewriteRule;
+import wyautl.rw.RewriteRule.RankComparator;
+import wyautl.util.IterativeRewriter.Strategy;
 import wyrl.core.Pattern;
 
 /**
@@ -52,14 +54,12 @@ import wyrl.core.Pattern;
  * @author David J. Pearce
  *
  */
-public final class RandomisedStateRuleRewriteStrategy<T extends RewriteRule> extends IterativeRewriter.Strategy<T> {
-
-	private static final Random random = new Random(System.currentTimeMillis());
+public final class FairStateRuleRewriteStrategy<T extends RewriteRule> extends IterativeRewriter.Strategy<T> {
 
 	/**
 	 * The static dispatch table
 	 */
-	private final RewriteRule[][] dispatchTable;
+	private final RewriteRule[] rules;
 
 	/**
 	 * Temporary list of inference activations used.
@@ -72,52 +72,49 @@ public final class RandomisedStateRuleRewriteStrategy<T extends RewriteRule> ext
 	private final Automaton automaton;
 
 	/**
-	 * The current state being explored by this strategy
+	 * Starting state on the current round.
 	 */
-	private int current;
+	private int startStep;
 
 	/**
-	 *
+	 * The current state being explored by this strategy
 	 */
-	private ArrayList<Integer> order;
+	private int currentStep;
 
 	/**
 	 * Record the number of probes for statistical reporting purposes
 	 */
 	private int numProbes;
 
-	public RandomisedStateRuleRewriteStrategy(Automaton automaton, T[] rules, Schema schema) {
+	public FairStateRuleRewriteStrategy(Automaton automaton, T[] rules, Schema schema) {
 		this(automaton, rules, schema,new RewriteRule.RankComparator());
 	}
 
-	public RandomisedStateRuleRewriteStrategy(Automaton automaton, T[] rules,
+	public FairStateRuleRewriteStrategy(Automaton automaton, T[] rules,
 			Schema schema, Comparator<RewriteRule> comparator) {
 		this.automaton = automaton;
-		this.dispatchTable = constructDispatchTable(rules,schema,comparator);
-		this.order = constructRandomOrder();
+		this.rules = Arrays.copyOf(rules,rules.length);
+		Arrays.sort(this.rules,comparator);
+		this.startStep = Math.max(0,(automaton.nStates() * rules.length) - 1);
 	}
 
 	@Override
 	protected Activation next(boolean[] reachable) {
 		int nStates = automaton.nStates();
+		int maxStep = nStates * rules.length;
 
-		while (current < nStates && worklist.size() == 0) {
-			int index = order.get(current);
-			// Check whether state is reachable and that it's a term. This is
-			// because only reachable states should be rewritten; and, only
-			// terms can be roots of rewrite rules.
-			if (reachable[index]) {
-				Automaton.State state = automaton.get(index);
+		while (currentStep != startStep && worklist.size() == 0) {
+			int stateRef = currentStep / rules.length;
+			int rule = currentStep % rules.length;
+
+			if (reachable[stateRef]) {
+				Automaton.State state = automaton.get(stateRef);
 				if (state instanceof Automaton.Term) {
-					RewriteRule[] rules = dispatchTable[state.kind];
-					for (int j = 0; j != rules.length; ++j) {
-						RewriteRule rw = rules[j];
-						rw.probe(automaton, index, worklist);
-						numProbes++;
-					}
+					rules[rule].probe(automaton, stateRef, worklist);
+					numProbes++;
 				}
 			}
-			current = current + 1;
+			currentStep = (currentStep + 1) % maxStep;
 		}
 
 		if (worklist.size() > 0) {
@@ -132,42 +129,22 @@ public final class RandomisedStateRuleRewriteStrategy<T extends RewriteRule> ext
 
 	@Override
 	protected void reset() {
-		order = constructRandomOrder();
+		int nStates = automaton.nStates();
+		int maxStep = nStates * rules.length;
 		worklist.clear();
-		current = 0;
+		if(maxStep == 0) {
+			startStep = 0;
+			currentStep = 0;
+		} else if(currentStep == 0) {
+			startStep = maxStep - 1;
+		} else {
+			currentStep = Math.min(maxStep-1,currentStep);
+			startStep = currentStep - 1;
+		}
 	}
 
 	@Override
 	public int numProbes() {
 		return numProbes;
-	}
-
-	private ArrayList<Integer> constructRandomOrder() {
-		ArrayList<Integer> r = new ArrayList<Integer>();
-		for(int i=0;i!=automaton.nStates();++i) {
-			r.add(i);
-		}
-		Collections.shuffle(r,random);
-		return r;
-	}
-
-	private static RewriteRule[][] constructDispatchTable(RewriteRule[] rules,
-			Schema schema, Comparator<RewriteRule> comparator) {
-		RewriteRule[][] table = new RewriteRule[schema.size()][];
-		for (int i = 0; i != table.length; ++i) {
-			Schema.Term term = schema.get(i);
-			ArrayList<RewriteRule> tmp = new ArrayList<RewriteRule>();
-			for (int j = 0; j != rules.length; ++j) {
-				RewriteRule ir = rules[j];
-				Pattern.Term pt = ir.pattern();
-				if (pt.name.equals(term.name)) {
-					tmp.add(ir);
-				}
-			}
-			RewriteRule[] rs = tmp.toArray(new RewriteRule[tmp.size()]);
-			Arrays.sort(rs, comparator);
-			table[i] = rs;
-		}
-		return table;
 	}
 }

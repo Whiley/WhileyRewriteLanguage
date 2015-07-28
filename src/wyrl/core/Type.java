@@ -31,9 +31,9 @@ import java.io.IOException;
 import wyautl.core.*;
 import wyautl.io.BinaryAutomataWriter;
 import wyautl.rw.InferenceRule;
-import wyautl.rw.IterativeRewriter;
 import wyautl.rw.ReductionRule;
-import wyautl.rw.SimpleRewriteStrategy;
+import wyautl.util.IterativeRewriter;
+import wyautl.util.SimpleRewriteStrategy;
 import wyfs.io.BinaryOutputStream;
 import static wyrl.core.Types.*;
 
