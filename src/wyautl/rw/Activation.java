@@ -69,6 +69,10 @@ public final class Activation {
 	public int root() {
 		return state[0];
 	}
+	
+	public RewriteRule rule() {
+		return rule;
+	}
 
 	/**
 	 * Returns the complete set of states upon which this activation depends.
