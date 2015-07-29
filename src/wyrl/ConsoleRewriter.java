@@ -267,8 +267,18 @@ public class ConsoleRewriter {
 	 * @return
 	 */
 	public boolean execute(String line) {
+		Command candidate = null;
 		for (Command c : commands) {
-			Object[] args = c.match(line);
+			if(c.canMatch(line)) {
+				if(candidate != null) {
+					System.out.println("Ambiguos Command \"" + c.keyword);
+				} else {
+					candidate = c;
+				}
+			}
+		}
+		if(candidate != null) {
+			Object[] args = candidate.match(line);
 			if (args != null) {
 				// Yes, this command was matched. Now, sanity check the
 				// arguments.
@@ -276,14 +286,14 @@ public class ConsoleRewriter {
 					if (args[i] == null) {
 						// this indicates a problem converting this
 						// argument, so report an error to the user.
-						System.out.println("Command \"" + c.keyword
+						System.out.println("Command \"" + candidate.keyword
 								+ "\": syntax error on argument " + (i+1));
 						return false;
 					}
 				}
 				try {
 					// Ok, attemp to execute the command;
-					c.method.invoke(this, args);
+					candidate.method.invoke(this, args);
 					return true;
 				} catch (IllegalAccessException e) {
 					e.printStackTrace();
@@ -331,6 +341,27 @@ public class ConsoleRewriter {
 		}
 
 		/**
+		 * Check whether a given line of text could match the given command or
+		 * not. Specifically, a command can match if it has the right number of
+		 * arguments, and the given command begins with the string command
+		 * provided.
+		 * 
+		 * @param line
+		 * @return
+		 */
+		public boolean canMatch(String line) {
+			Class[] parameters = method.getParameterTypes();
+			String[] tokens = line.split(" ");
+			if (tokens.length != parameters.length + 1) {
+				return false;
+			} else if (!keyword.startsWith(tokens[0])) {
+				return false;
+			} else {
+				return true;
+			}
+		}
+		
+		/**
 		 * Check whether a given line of text matches the command or not. For
 		 * this to be true, the number of arguments must match the expected
 		 * number, and the given keyword must match as well. If so, an array of
@@ -346,7 +377,7 @@ public class ConsoleRewriter {
 			String[] tokens = line.split(" ");
 			if (tokens.length != parameters.length + 1) {
 				return null;
-			} else if (!tokens[0].equals(keyword)) {
+			} else if (!keyword.startsWith(tokens[0])) {
 				return null;
 			} else {
 				Object[] arguments = new Object[tokens.length-1];
