@@ -74,6 +74,10 @@ public final class Activation {
 		return rule;
 	}
 
+	public int[] binding() {
+		return state;
+	}
+	
 	/**
 	 * Returns the complete set of states upon which this activation depends.
 	 * Any changes to those states necessarily invalidates this activation, and

@@ -1,11 +1,14 @@
 package wyrl;
 
 import java.io.BufferedReader;
+import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.io.Reader;
 import java.io.StringReader;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.util.ArrayList;
 
 import wyautl.core.*;
 import wyautl.io.PrettyAutomataReader;
@@ -43,9 +46,19 @@ public class ConsoleRewriter {
 	private String[] indents = {};
 	
 	/**
+	 * Indicate whether or not to print term indices
+	 */
+	private boolean indices = true;
+	
+	/**
 	 * If true, generate verbose information about rewriting.
 	 */
 	private boolean verbose;
+	
+	/**
+	 * Records the rewrite history in order to allow backtracking, etc.
+	 */
+	private final ArrayList<RewriteStep> history = new ArrayList<RewriteStep>();
 	
 	public ConsoleRewriter(Schema schema, InferenceRule[] inferences, RewriteRule[] reductions) {
 		this.schema = schema;
@@ -70,8 +83,13 @@ public class ConsoleRewriter {
 			this.new Command("help",getMethod("printHelp")),
 			this.new Command("verbose",getMethod("setVerbose",boolean.class)),
 			this.new Command("print",getMethod("print")),
-			this.new Command("indent",getMethod("indent",String[].class)),
+			this.new Command("indent",getMethod("setIndent",String[].class)),
+			this.new Command("indices",getMethod("setIndices",boolean.class)),
+			this.new Command("log",getMethod("printLog")),
 			this.new Command("rewrite",getMethod("startRewrite",String.class)),
+			this.new Command("load",getMethod("loadRewrite",String.class)),
+			this.new Command("reduce",getMethod("reduce")),
+			this.new Command("reduce",getMethod("reduce",int.class)),
 			this.new Command("apply",getMethod("applyActivation",int.class)),
 	};
 
@@ -94,30 +112,105 @@ public class ConsoleRewriter {
 		try {
 			RewriteState state = rewriter.state(); 
 			PrettyAutomataWriter writer = new PrettyAutomataWriter(System.out,schema,indents);
+			writer.setIndices(indices);
 			writer.write(state.automaton());
 			writer.flush();
 			System.out.println("\n");
 			for(int i=0;i!=state.size();++i) {
 				Activation activation = state.activation(i);
-				System.out.println("[" + i + "] #" + activation.root() + ", " + activation.rule().name());
+				System.out.print("[" + i + "] ");
+				print(activation);	
+				System.out.println();
 			}
 		} catch(IOException e) { System.err.println("I/O error printing automaton"); }
 	}
 	
-	public void indent(String[] indents) {
+	private void print(Activation activation) {
+		if(activation.rule().name() != null) {
+			System.out.print(activation.rule().name());
+		}
+		System.out.print(" #" + activation.root());			
+		if(activation.rule() instanceof InferenceRule) {
+			System.out.print(" (inference)");
+		}
+	}
+	
+	public void printLog() {
+		for(int i = 0;i!=history.size();++i) {
+			System.out.print("[" + i + "] ");
+			RewriteStep step = history.get(i);
+			Activation activation = step.activation();
+			RewriteState before = step.before();
+			RewriteState after = step.after();
+			System.out.print(before.automaton().hashCode() + " => " + after.automaton().hashCode());			
+			System.out.println(" (" + activation.root() + ", " + activation.rule().name() + ")");
+		}
+	}	
+	
+	public void setIndices(boolean indices) {
+		this.indices = indices;
+	}
+	
+	public void setIndent(String[] indents) {
 		this.indents = indents;
 	}
 	
+	public void loadRewrite(String input) throws Exception {
+		FileReader reader = new FileReader(input);
+		startRewrite(reader);
+	}
+	
 	public void startRewrite(String input) throws Exception {
-		PrettyAutomataReader reader = new PrettyAutomataReader(new StringReader(input), schema);
+		startRewrite(new StringReader(input));
+	}
+	
+	public void startRewrite(Reader input) throws Exception {
+		PrettyAutomataReader reader = new PrettyAutomataReader(input, schema);
 		Automaton automaton = reader.read();		
 		rewriter = new SimpleRewriter(automaton,schema,rules);
 		print();
 	}
 	
 	public void applyActivation(int activation) {
-		rewriter.apply(activation);
+		RewriteStep step = rewriter.apply(activation);
+		history.add(step);
 		print();
+	}
+	
+	public void reduce() {
+		while(numReductions() > 0) {
+			RewriteStep step = rewriter.apply(selectReduction());
+			history.add(step);
+		}
+	}
+	
+	public void reduce(int count) {
+		while(numReductions() > 0 && count >= 0) {
+			RewriteStep step = rewriter.apply(selectReduction());
+			history.add(step);
+			count = count - 1;
+		}
+	}
+	
+	private int numReductions() {
+		RewriteState state = rewriter.state();
+		int count=0;
+		for(int i=0;i!=state.size();++i) {
+			if(state.activation(i).rule() instanceof ReductionRule) {
+				count++;
+			}
+		}
+		return count;
+	}
+	
+	private int selectReduction() {
+		RewriteState state = rewriter.state();
+		for(int i=0;i!=state.size();++i) {
+			if(state.activation(i).rule() instanceof ReductionRule) {
+				return i;
+			}
+		}
+		return -1;
 	}
 	
 	// =========================================================================

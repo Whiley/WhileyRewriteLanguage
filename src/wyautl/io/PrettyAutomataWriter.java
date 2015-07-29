@@ -56,6 +56,7 @@ public class PrettyAutomataWriter  {
 	private final Schema schema;
 	private final HashSet<String> indents;
 	private int level;
+	private boolean indices;
 
 	public PrettyAutomataWriter(PrintStream stream, Schema schema, String... indents) {
 		this(new PrintWriter(stream),schema,indents);
@@ -83,6 +84,10 @@ public class PrettyAutomataWriter  {
 		}
 	}
 
+	public void setIndices(boolean flag) {
+		indices = flag;
+	}
+	
 	public void write(Automaton automaton) throws IOException {
 		int[] headers = new int[automaton.nStates()];
 		for (int i = 0; i != automaton.nRoots(); ++i) {
@@ -121,6 +126,9 @@ public class PrettyAutomataWriter  {
 		if (state instanceof Automaton.Constant) {
 			write((Automaton.Constant) state, headers, automaton, indent);
 		} else if (state instanceof Automaton.Term) {
+			if(indices) {
+				writer.print(index + ":");
+			}
 			write((Automaton.Term) state, headers, automaton, indent);
 		} else {
 			write((Automaton.Collection) state, headers, automaton, indent);
@@ -144,7 +152,7 @@ public class PrettyAutomataWriter  {
 	protected void write(Automaton.Term term, int[] headers, Automaton automaton,
 			boolean indent) throws IOException {
 		String name = schema.get(term.kind).name;
-		indent = indents.contains(name);
+		indent = indents.contains(name);		
 		writer.print(name);
 		Schema.State element = schema.get(term.kind).child;
 		if (element != null && element instanceof Schema.Collection) {

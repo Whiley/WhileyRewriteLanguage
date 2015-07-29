@@ -31,4 +31,16 @@ public class RewriteStep {
 		this.after = after;
 		this.activation = activation;
 	}
+	
+	public RewriteState before() {
+		return before;
+	}
+	
+	public RewriteState after() {
+		return after;
+	}
+	
+	public Activation activation() {
+		return activation;
+	}
 }

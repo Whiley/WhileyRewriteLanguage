@@ -57,7 +57,7 @@ public class SimpleRewriter implements Rewriter {
 			nextState = state;
 		}
 
-		RewriteStep step = new RewriteStep(state, activation, state);
+		RewriteStep step = new RewriteStep(state, activation, nextState);
 		state.update(index, step);
 		state = nextState;
 		return step;
