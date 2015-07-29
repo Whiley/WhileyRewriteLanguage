@@ -38,6 +38,7 @@ import wyautl.rw.ReductionRule;
 import wyautl.util.BigRational;
 import wyautl.util.SimpleRewriteStrategy;
 import wyfs.io.BinaryOutputStream;
+import wyrl.ConsoleRewriter;
 import wyrl.core.Attribute;
 import wyrl.core.Expr;
 import wyrl.core.Exprs;
@@ -1898,37 +1899,8 @@ public class JavaFileWriter {
 		myOut(1,
 				"// =========================================================================");
 		myOut();
-		myOut(1, "public static void main(String[] args) throws IOException {");
-		myOut(2, "try {");
-		myOut(3,
-				"PrettyAutomataReader reader = new PrettyAutomataReader(System.in,SCHEMA);");
-		myOut(3,
-				"PrettyAutomataWriter writer = new PrettyAutomataWriter(System.out,SCHEMA);");
-		myOut(3, "Automaton automaton = reader.read();");
-		myOut(3, "System.out.print(\"PARSED: \");");
-		myOut(3, "print(automaton);");
-		myOut(3, "IterativeRewriter.Strategy<InferenceRule> inferenceStrategy = new SimpleRewriteStrategy<InferenceRule>(automaton, inferences);");
-		myOut(3, "IterativeRewriter.Strategy<ReductionRule> reductionStrategy = new SimpleRewriteStrategy<ReductionRule>(automaton, reductions);");
-		myOut(3, "IterativeRewriter rw = new IterativeRewriter(automaton,inferenceStrategy, reductionStrategy, SCHEMA);");
-		myOut(3, "rw.apply();");
-		myOut(3, "System.out.print(\"REWROTE: \");");
-		myOut(3, "print(automaton);");
-		myOut(3, "System.out.println(\"\\n\\n=> (\" + rw.getStats() + \")\\n\");");
-		myOut(2, "} catch(PrettyAutomataReader.SyntaxError ex) {");
-		myOut(3, "System.err.println(ex.getMessage());");
-		myOut(2, "}");
-		myOut(1, "}");
-
-		myOut(1, "");
-		myOut(1, "static void print(Automaton automaton) {");
-		myOut(2, "try {");
-		myOut(3,
-				"PrettyAutomataWriter writer = new PrettyAutomataWriter(System.out,SCHEMA);");
-		myOut(3, "writer.write(automaton);");
-		myOut(3, "writer.flush();");
-		myOut(3, "System.out.println();");
-		myOut(2,
-				"} catch(IOException e) { System.err.println(\"I/O error printing automaton\"); }");
+		myOut(1, "public static void main(String[] args) throws IOException {");		
+		myOut(2, "new wyrl.ConsoleRewriter(SCHEMA,inferences,reductions).readEvaluatePrintLoop();");
 		myOut(1, "}");
 	}
 
