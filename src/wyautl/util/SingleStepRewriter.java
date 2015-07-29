@@ -5,7 +5,7 @@ import java.util.ArrayList;
 import wyautl.core.*;
 import wyautl.rw.*;
 
-public class SimpleRewriter implements Rewriter {
+public class SingleStepRewriter implements Rewriter {
 	
 	/**
 	 * The schema used by automata being reduced. This is primarily useful for
@@ -21,7 +21,7 @@ public class SimpleRewriter implements Rewriter {
 	private RewriteState state;
 	
 	
-	public SimpleRewriter(Automaton automaton, Schema schema, RewriteRule[] rules) {		
+	public SingleStepRewriter(Automaton automaton, Schema schema, RewriteRule[] rules) {		
 		this.schema = schema;
 		this.rules = rules;		
 		this.state = initialise(automaton);
@@ -32,6 +32,16 @@ public class SimpleRewriter implements Rewriter {
 		return state;
 	}
 
+	/**
+	 * Reset the rewriter to a previous state. This is useful for backtracking,
+	 * amongst other things.
+	 * 
+	 * @param state
+	 */
+	public void reset(RewriteState state) {
+		this.state = state;
+	}
+	
 	/**
 	 * Apply a given activation on this state to potentially produce an updated
 	 * state.

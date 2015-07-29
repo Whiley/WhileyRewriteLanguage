@@ -37,12 +37,20 @@ package wyautl.rw;
 public interface Rewriter {
 
 	/**
-	 * Access the current state of the rewriter. This state can then be
+	 * Access the working state of the rewriter. This state can then be
 	 * inspected to see choose the next activation.
 	 * 
 	 * @return
 	 */
 	public RewriteState state();
+	
+	/**
+	 * Reset the working state to a previous state. This allows the rewrite to
+	 * reset any internal data structures as well.
+	 * 
+	 * @param state
+	 */
+	public void reset(RewriteState state);
 	
 	/**
 	 * Apply the rewriter to a given state by taking one of the available
@@ -52,7 +60,5 @@ public interface Rewriter {
 	 * @param choice
 	 * @return
 	 */
-	public RewriteStep apply(int choice);
-
-
+	public RewriteStep apply(int choice);	
 }

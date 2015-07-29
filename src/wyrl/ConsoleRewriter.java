@@ -14,7 +14,7 @@ import wyautl.core.*;
 import wyautl.io.PrettyAutomataReader;
 import wyautl.io.PrettyAutomataWriter;
 import wyautl.rw.*;
-import wyautl.util.SimpleRewriter;
+import wyautl.util.SingleStepRewriter;
 
 /**
  * Provides a general console-based interface for a given rewrite system. The
@@ -38,7 +38,7 @@ public class ConsoleRewriter {
 	/**
 	 * Rewriter being used in this session
 	 */
-	private SimpleRewriter rewriter;
+	private Rewriter rewriter;
 	
 	/**
 	 * List of indents being used
@@ -91,6 +91,7 @@ public class ConsoleRewriter {
 			this.new Command("reduce",getMethod("reduce")),
 			this.new Command("reduce",getMethod("reduce",int.class)),
 			this.new Command("apply",getMethod("applyActivation",int.class)),
+			this.new Command("reset",getMethod("reset",int.class)),
 	};
 
 	public void quit() {
@@ -119,19 +120,23 @@ public class ConsoleRewriter {
 			for(int i=0;i!=state.size();++i) {
 				Activation activation = state.activation(i);
 				System.out.print("[" + i + "] ");
-				print(activation);	
+				print(activation,state.step(i));	
 				System.out.println();
 			}
 		} catch(IOException e) { System.err.println("I/O error printing automaton"); }
 	}
 	
-	private void print(Activation activation) {
+	private void print(Activation activation, RewriteStep step) {
+		if(activation.rule() instanceof InferenceRule) {
+			System.out.print(" *");
+		}
 		if(activation.rule().name() != null) {
 			System.out.print(activation.rule().name());
 		}
-		System.out.print(" #" + activation.root());			
-		if(activation.rule() instanceof InferenceRule) {
-			System.out.print(" (inference)");
+		System.out.print(" #" + activation.root());
+		if(step != null) {
+			String afterHash = String.format("%08x",step.after().automaton().hashCode());
+			System.out.print(" (" + afterHash + ")");
 		}
 	}
 	
@@ -142,7 +147,9 @@ public class ConsoleRewriter {
 			Activation activation = step.activation();
 			RewriteState before = step.before();
 			RewriteState after = step.after();
-			System.out.print(before.automaton().hashCode() + " => " + after.automaton().hashCode());			
+			String beforeHash = String.format("%08x",before.automaton().hashCode());
+			String afterHash = String.format("%08x",after.automaton().hashCode());				
+			System.out.print(beforeHash + " => " + afterHash);			
 			System.out.println(" (" + activation.root() + ", " + activation.rule().name() + ")");
 		}
 	}	
@@ -167,7 +174,7 @@ public class ConsoleRewriter {
 	public void startRewrite(Reader input) throws Exception {
 		PrettyAutomataReader reader = new PrettyAutomataReader(input, schema);
 		Automaton automaton = reader.read();		
-		rewriter = new SimpleRewriter(automaton,schema,rules);
+		rewriter = new SingleStepRewriter(automaton,schema,rules);
 		print();
 	}
 	
@@ -211,6 +218,10 @@ public class ConsoleRewriter {
 			}
 		}
 		return -1;
+	}
+	
+	public void reset(int id) {
+		rewriter.reset(history.get(id).before());		
 	}
 	
 	// =========================================================================

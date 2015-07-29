@@ -33,12 +33,8 @@ import java.math.BigInteger;
 import java.util.*;
 
 import wyautl.core.Automaton;
-import wyautl.rw.InferenceRule;
-import wyautl.rw.ReductionRule;
 import wyautl.util.BigRational;
-import wyautl.util.SimpleRewriteStrategy;
 import wyfs.io.BinaryOutputStream;
-import wyrl.ConsoleRewriter;
 import wyrl.core.Attribute;
 import wyrl.core.Expr;
 import wyrl.core.Exprs;

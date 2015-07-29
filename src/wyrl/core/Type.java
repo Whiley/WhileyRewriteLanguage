@@ -30,10 +30,6 @@ import java.io.IOException;
 
 import wyautl.core.*;
 import wyautl.io.BinaryAutomataWriter;
-import wyautl.rw.InferenceRule;
-import wyautl.rw.ReductionRule;
-import wyautl.util.IterativeRewriter;
-import wyautl.util.SimpleRewriteStrategy;
 import wyfs.io.BinaryOutputStream;
 import static wyrl.core.Types.*;
 
@@ -995,13 +991,13 @@ public abstract class Type {
 	 * @param t
 	 */
 	private static void reduce(Automaton automaton) {
-		IterativeRewriter.Strategy<InferenceRule> inferenceStrategy = new SimpleRewriteStrategy<InferenceRule>(
-				automaton, inferences);
-		IterativeRewriter.Strategy<ReductionRule> reductionStrategy = new SimpleRewriteStrategy<ReductionRule>(
-				automaton, reductions);
-		IterativeRewriter rw = new IterativeRewriter(automaton,
-				inferenceStrategy, reductionStrategy, SCHEMA);
-		rw.apply();
+//		IterativeRewriter.Strategy<InferenceRule> inferenceStrategy = new SimpleRewriteStrategy<InferenceRule>(
+//				automaton, inferences);
+//		IterativeRewriter.Strategy<ReductionRule> reductionStrategy = new SimpleRewriteStrategy<ReductionRule>(
+//				automaton, reductions);
+//		IterativeRewriter rw = new IterativeRewriter(automaton,
+//				inferenceStrategy, reductionStrategy, SCHEMA);
+//		rw.apply();
 	}
 
 	/**
