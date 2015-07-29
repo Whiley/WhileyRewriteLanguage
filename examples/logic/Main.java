@@ -4,6 +4,7 @@ import java.io.InputStreamReader;
 import wyautl.core.Automaton;
 import wyautl.io.PrettyAutomataWriter;
 import wyautl.rw.*;
+import wyautl.util.*;
 
 public final class Main {
 
@@ -45,15 +46,19 @@ public final class Main {
 			System.out.println("------------------------------------");
 			writer.write(automaton);
 			writer.flush();
-
-			IterativeRewriter.Strategy<InferenceRule> inferenceStrategy = new SimpleRewriteStrategy<InferenceRule>(automaton, Logic.inferences);
-			IterativeRewriter.Strategy<ReductionRule> reductionStrategy = new SimpleRewriteStrategy<ReductionRule>(
-						automaton, Logic.reductions);
-			IterativeRewriter rw = new IterativeRewriter(automaton,
-					inferenceStrategy, reductionStrategy, Logic.SCHEMA);
-			rw.apply();
-			System.out.println("\n\n=> (" + rw.getStats() + ")\n");
-			writer.write(automaton);
+			InferenceRule[] inferences = Logic.inferences;
+			ReductionRule[] reductions = Logic.reductions;
+			RewriteRule[] rules = new RewriteRule[inferences.length + reductions.length];
+			System.arraycopy(inferences, 0, rules, 0, inferences.length);
+			System.arraycopy(reductions, 0, rules, inferences.length, reductions.length);
+			SimpleRewriter rewriter = new SimpleRewriter(automaton,Logic.SCHEMA,rules);
+			int count = 0;
+			while(rewriter.state().size() > 0) {
+			    rewriter.apply(0);
+			    count = count + 1;
+			}
+			System.out.println("\n\n=> (" + count + " steps)\n");
+			writer.write(rewriter.state().automaton());
 			writer.flush();
 			System.out.println("\n");
 	} catch(RuntimeException e) {

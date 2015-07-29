@@ -48,8 +48,8 @@ public class SimpleRewriter implements Rewriter {
 		RewriteState nextState;
 
 		if (target != Automaton.K_VOID && from != target) {
-			System.out.println("ACTIVATION APPLIED:");
-			wyrl.util.Runtime.debug(automaton, schema, "And","Or");
+//			System.out.println("ACTIVATION APPLIED:");
+//			wyrl.util.Runtime.debug(automaton, schema, "And","Or");
 			automaton.compact();
 			nextState = initialise(automaton);			
 		} else {

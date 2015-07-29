@@ -69,9 +69,10 @@ public class ConsoleRewriter {
 			this.new Command("quit",getMethod("quit")),
 			this.new Command("help",getMethod("printHelp")),
 			this.new Command("verbose",getMethod("setVerbose",boolean.class)),
-			this.new Command("rewrite",getMethod("startRewrite",String.class)),
 			this.new Command("print",getMethod("print")),
-			this.new Command("indent",getMethod("indent",String[].class))
+			this.new Command("indent",getMethod("indent",String[].class)),
+			this.new Command("rewrite",getMethod("startRewrite",String.class)),
+			this.new Command("apply",getMethod("applyActivation",int.class)),
 	};
 
 	public void quit() {
@@ -89,6 +90,24 @@ public class ConsoleRewriter {
 		verbose = true;
 	}
 	
+	public void print() {
+		try {
+			RewriteState state = rewriter.state(); 
+			PrettyAutomataWriter writer = new PrettyAutomataWriter(System.out,schema,indents);
+			writer.write(state.automaton());
+			writer.flush();
+			System.out.println("\n");
+			for(int i=0;i!=state.size();++i) {
+				Activation activation = state.activation(i);
+				System.out.println("[" + i + "] #" + activation.root() + ", " + activation.rule().name());
+			}
+		} catch(IOException e) { System.err.println("I/O error printing automaton"); }
+	}
+	
+	public void indent(String[] indents) {
+		this.indents = indents;
+	}
+	
 	public void startRewrite(String input) throws Exception {
 		PrettyAutomataReader reader = new PrettyAutomataReader(new StringReader(input), schema);
 		Automaton automaton = reader.read();		
@@ -96,22 +115,9 @@ public class ConsoleRewriter {
 		print();
 	}
 	
-	public void print() {
-		try {
-			RewriteState state = rewriter.state(); 
-			PrettyAutomataWriter writer = new PrettyAutomataWriter(System.out,schema,indents);
-			writer.write(state.automaton());
-			writer.flush();
-			System.out.println();
-			for(int i=0;i!=state.size();++i) {
-				Activation activation = state.activation(i);
-				System.out.println(i + ") #" + activation.root() + ", " + activation.rule().name());
-			}
-		} catch(IOException e) { System.err.println("I/O error printing automaton"); }
-	}
-	
-	public void indent(String[] indents) {
-		this.indents = indents;
+	public void applyActivation(int activation) {
+		rewriter.apply(activation);
+		print();
 	}
 	
 	// =========================================================================
@@ -288,6 +294,8 @@ public class ConsoleRewriter {
 				return array;
 			} else if(parameter == String.class) {
 				return token;
+			} else if (parameter == String[].class) {
+				return token.split(",");
 			} else {
 				// In this case, the argument was not recognised.
 				return null;
