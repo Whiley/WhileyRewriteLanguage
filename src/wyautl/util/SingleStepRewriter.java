@@ -13,6 +13,9 @@ public class SingleStepRewriter implements Rewriter {
 	 */
 	protected final Schema schema;
 	
+	/**
+	 * The list of rewrite rules which the rewriter can apply.
+	 */
 	private final RewriteRule[] rules;
 	
 	/**
@@ -58,8 +61,6 @@ public class SingleStepRewriter implements Rewriter {
 		RewriteState nextState;
 
 		if (target != Automaton.K_VOID && from != target) {
-//			System.out.println("ACTIVATION APPLIED:");
-//			wyrl.util.Runtime.debug(automaton, schema, "And","Or");
 			automaton.compact();
 			nextState = initialise(automaton);			
 		} else {
@@ -67,7 +68,7 @@ public class SingleStepRewriter implements Rewriter {
 			nextState = state;
 		}
 
-		RewriteStep step = new RewriteStep(state, activation, nextState);
+		RewriteStep step = new RewriteStep(state, index, nextState);
 		state.update(index, step);
 		state = nextState;
 		return step;

@@ -14,6 +14,7 @@ import wyautl.core.*;
 import wyautl.io.PrettyAutomataReader;
 import wyautl.io.PrettyAutomataWriter;
 import wyautl.rw.*;
+import wyautl.util.CachingRewriter;
 import wyautl.util.SingleStepRewriter;
 
 /**
@@ -51,6 +52,11 @@ public class ConsoleRewriter {
 	private boolean indices = true;
 	
 	/**
+	 * Enable rewrite caching
+	 */
+	private boolean caching = true;
+	
+	/**
 	 * If true, generate verbose information about rewriting.
 	 */
 	private boolean verbose;
@@ -85,6 +91,7 @@ public class ConsoleRewriter {
 			this.new Command("print",getMethod("print")),
 			this.new Command("indent",getMethod("setIndent",String[].class)),
 			this.new Command("indices",getMethod("setIndices",boolean.class)),
+			this.new Command("caching",getMethod("setCaching",boolean.class)),
 			this.new Command("log",getMethod("printLog")),
 			this.new Command("rewrite",getMethod("startRewrite",String.class)),
 			this.new Command("load",getMethod("loadRewrite",String.class)),
@@ -143,23 +150,27 @@ public class ConsoleRewriter {
 	public void printLog() {
 		for(int i = 0;i!=history.size();++i) {
 			System.out.print("[" + i + "] ");
-			RewriteStep step = history.get(i);
-			Activation activation = step.activation();
+			RewriteStep step = history.get(i);			
 			RewriteState before = step.before();
+			Activation activation = before.activation(step.activation());
 			RewriteState after = step.after();
 			String beforeHash = String.format("%08x",before.automaton().hashCode());
 			String afterHash = String.format("%08x",after.automaton().hashCode());				
 			System.out.print(beforeHash + " => " + afterHash);			
 			System.out.println(" (" + activation.root() + ", " + activation.rule().name() + ")");
 		}
-	}	
+	}		
+	
+	public void setIndent(String[] indents) {
+		this.indents = indents;
+	}
 	
 	public void setIndices(boolean indices) {
 		this.indices = indices;
 	}
 	
-	public void setIndent(String[] indents) {
-		this.indents = indents;
+	public void setCaching(boolean flag) {
+		this.caching = flag;
 	}
 	
 	public void loadRewrite(String input) throws Exception {
@@ -174,8 +185,16 @@ public class ConsoleRewriter {
 	public void startRewrite(Reader input) throws Exception {
 		PrettyAutomataReader reader = new PrettyAutomataReader(input, schema);
 		Automaton automaton = reader.read();		
-		rewriter = new SingleStepRewriter(automaton,schema,rules);
+		rewriter = constructRewriter(automaton,schema,rules);
 		print();
+	}
+	
+	private Rewriter constructRewriter(Automaton automaton, Schema schema, RewriteRule[] rules) {
+		Rewriter rewriter = new SingleStepRewriter(automaton,schema,rules);
+		if(caching) {
+			rewriter = new CachingRewriter(rewriter);
+		}
+		return rewriter;
 	}
 	
 	public void applyActivation(int activation) {
@@ -185,36 +204,32 @@ public class ConsoleRewriter {
 	}
 	
 	public void reduce() {
-		while(numReductions() > 0) {
-			RewriteStep step = rewriter.apply(selectReduction());
+		int r;
+		while((r = selectFirstUnvisited(ReductionRule.class)) != -1) {
+			RewriteStep step = rewriter.apply(r);
 			history.add(step);
 		}
+		print();
 	}
 	
 	public void reduce(int count) {
-		while(numReductions() > 0 && count >= 0) {
-			RewriteStep step = rewriter.apply(selectReduction());
+		int r;
+		while(count >= 0 && (r = selectFirstUnvisited(ReductionRule.class)) != -1) {
+			RewriteStep step = rewriter.apply(r);
 			history.add(step);
 			count = count - 1;
 		}
+		print();
 	}
 	
-	private int numReductions() {
-		RewriteState state = rewriter.state();
-		int count=0;
-		for(int i=0;i!=state.size();++i) {
-			if(state.activation(i).rule() instanceof ReductionRule) {
-				count++;
-			}
-		}
-		return count;
-	}
-	
-	private int selectReduction() {
+	private <T extends RewriteRule> int selectFirstUnvisited(Class<T> kind) {
 		RewriteState state = rewriter.state();
 		for(int i=0;i!=state.size();++i) {
-			if(state.activation(i).rule() instanceof ReductionRule) {
-				return i;
+			if(state.step(i) == null) {
+				Activation activation = state.activation(i);
+				if(kind.isInstance(activation.rule())) {
+					return i;
+				}
 			}
 		}
 		return -1;

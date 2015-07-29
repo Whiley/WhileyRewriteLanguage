@@ -24,9 +24,9 @@ public class RewriteStep {
 	 * This identifies the rewrite rule, but also the actual binding for that
 	 * rule against states in the automaton.
 	 */
-	private final Activation activation;
+	private final int activation;
 	
-	public RewriteStep(RewriteState before, Activation activation, RewriteState after) {
+	public RewriteStep(RewriteState before, int activation, RewriteState after) {
 		this.before = before;
 		this.after = after;
 		this.activation = activation;
@@ -40,7 +40,7 @@ public class RewriteStep {
 		return after;
 	}
 	
-	public Activation activation() {
+	public int activation() {
 		return activation;
 	}
 }

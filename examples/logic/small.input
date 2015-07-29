@@ -1,0 +1,1 @@
+And{Or{Not(False),Var("X")},And{True,Var("X")},Not(Var("X"))}
