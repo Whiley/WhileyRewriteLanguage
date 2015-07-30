@@ -49,7 +49,7 @@ public class RewriteState {
 		return steps[index];
 	}
 	
-	public void update(int index, RewriteStep step) {
+	public void update(int index, RewriteStep step) {		
 		this.steps[index] = step;
-	}
+	}	
 }

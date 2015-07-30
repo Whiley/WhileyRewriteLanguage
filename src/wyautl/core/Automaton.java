@@ -858,12 +858,13 @@ public final class Automaton {
 	/**
 	 * Determine the hashCode of an automaton.
 	 */
+	@Override
 	public int hashCode() {
-		int r = 0;
+		int r = nStates;
 		for (int i = 0; i != nStates; ++i) {
 			State ith = states[i];
 			if(ith != null) {
-				r = r + ith.hashCode();
+				r = r ^ ith.hashCode();
 			}
 		}
 		return r;
@@ -877,6 +878,7 @@ public final class Automaton {
 	 * whether two types are structurally isomorphic, using the
 	 * <code>equivalentTo(t1,t2)</code> and/or <code>isomorphicTo</code> methods.
 	 */
+	@Override
 	public boolean equals(Object o) {
 		if (o instanceof Automaton) {
 			Automaton a = (Automaton) o;
@@ -892,6 +894,7 @@ public final class Automaton {
 						return false;
 					}
 				} else if (!si.equals(ci)) {
+					diffAutomaton(this,a);
 					return false;
 				}
 			}
@@ -905,6 +908,57 @@ public final class Automaton {
 		return false;
 	}
 
+	private static void diffAutomaton(Automaton a1, Automaton a2) {
+		System.out.print("DIFF: " + System.identityHashCode(a1) + ", " + System.identityHashCode(a2) + " : ");
+		if(a1.nStates() != a2.nStates()) {
+			System.out.println("DIFFERENT NUMBER STATES");
+		}
+		for(int i=0;i!=a1.nStates();++i) {
+			State a1s = a1.states[i];
+			State a2s = a2.states[i];
+			diffState(i,a1s,a2s);			
+		}
+		System.out.println();
+	}
+	
+	private static void diffState(int index, Automaton.State a1s, Automaton.State a2s) {
+		if(a1s instanceof Automaton.Constant && a2s instanceof Automaton.Constant) {
+			diffState(index,(Automaton.Constant)a1s, (Automaton.Constant)a2s);
+		} else if(a1s instanceof Automaton.Term && a2s instanceof Automaton.Term) {
+			diffState(index,(Automaton.Term)a1s, (Automaton.Term)a2s);
+		} else if(a1s instanceof Automaton.Collection && a2s instanceof Automaton.Collection) {
+			diffState(index,(Automaton.Collection)a1s, (Automaton.Collection)a2s);
+		} 
+	}
+	
+	private static void diffState(int index, Automaton.Constant a1s, Automaton.Constant a2s) {
+		if(!a1s.value.equals(a2s.value)) {
+			System.out.print("[" + index + "] " + a1s.value + " != " + a2s.value);
+		}
+	}
+	
+	private static void diffState(int index, Automaton.Term a1s, Automaton.Term a2s) {
+		if(a1s.kind != a2s.kind) {
+			System.out.println("[" + index + "] " + "TERM KIND " + a1s.kind + "!=" + a2s.kind);
+		} else if(a1s.contents != a2s.contents) {
+			System.out.println("[" + index + "] " + "TERM CONTENTS " + a1s.contents + "!=" + a2s.contents);
+		}	
+	}
+	
+	private static void diffState(int index, Automaton.Collection a1s, Automaton.Collection a2s) {
+		if(a1s.kind != a2s.kind) {
+			System.out.println("[" + index + "] " + "COLLECTION KIND " + a1s.kind + "!=" + a2s.kind);
+		} else if(a1s.length != a2s.length) {
+			System.out.println("[" + index + "] " + "COLLECTION LENGTH " + a1s.length + "!=" + a2s.length);
+		} else {
+			for(int i=0;i!=a1s.length;++i) {
+				if(a1s.children[i] != a2s.children[i]) {
+					System.out.println("[" + index + "] " + "COLLECTION CHILD(" + i + ") " + a1s.children[i] + "!=" + a2s.children[i]);
+				}
+			}
+		}
+	}
+	
 	/**
 	 * Return a simple string representation of an automaton. Generally
 	 * speaking, this is only useful for debugging purposes. In order to get a
@@ -1044,6 +1098,7 @@ public final class Automaton {
 			}
 		}
 
+		@Override
 		public boolean equals(final Object o) {
 			if (o instanceof Term) {
 				Term t = (Term) o;
@@ -1052,8 +1107,9 @@ public final class Automaton {
 			return false;
 		}
 
+		@Override
 		public int hashCode() {
-			return contents * kind;
+			return contents ^ kind;
 		}
 
 		public String toString() {
@@ -1085,6 +1141,7 @@ public final class Automaton {
 			return false;
 		}
 
+		@Override
 		public boolean equals(final Object o) {
 			if (o instanceof Constant) {
 				Constant t = (Constant) o;
@@ -1097,8 +1154,9 @@ public final class Automaton {
 			return this;
 		}
 
+		@Override
 		public int hashCode() {
-			return value.hashCode() * kind;
+			return value.hashCode() ^ kind;
 		}
 
 		public String toString() {
@@ -1304,6 +1362,7 @@ public final class Automaton {
 			return false;
 		}
 
+		@Override
 		public boolean equals(final Object o) {
 			if (o instanceof Collection) {
 				Collection t = (Collection) o;
@@ -1320,6 +1379,7 @@ public final class Automaton {
 			return false;
 		}
 
+		@Override
 		public int hashCode() {
 			int hashCode = kind;
 			for (int i = 0; i != length; ++i) {

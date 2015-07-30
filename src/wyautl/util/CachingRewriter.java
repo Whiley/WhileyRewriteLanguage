@@ -38,15 +38,16 @@ public class CachingRewriter implements Rewriter {
 		// this state.
 		Automaton automaton = step.after().automaton();
 		RewriteState after = cache.get(automaton);
-		if (after != null) {
-			// indicates a state we have previously encountered
+		if (after != null) {			
+			// indicates a state we have previously encountered			
 			RewriteState before = step.before();
-			step = new RewriteStep(before, step.activation(), after);
-			before.update(step.activation(), step);
+			step = new RewriteStep(before, choice, after);
+			before.update(choice, step);
+			rewriter.reset(after);
 		} else {
 			// this is a new state
-			cache.put(automaton, after);
-		}
+			cache.put(automaton, step.after());
+		}		
 		return step;
-	}
+	}			
 }

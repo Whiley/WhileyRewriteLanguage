@@ -95,8 +95,10 @@ public class ConsoleRewriter {
 			this.new Command("log",getMethod("printLog")),
 			this.new Command("rewrite",getMethod("startRewrite",String.class)),
 			this.new Command("load",getMethod("loadRewrite",String.class)),
-			this.new Command("reduce",getMethod("reduce")),
+			this.new Command("reduce",getMethod("reduce")),			
 			this.new Command("reduce",getMethod("reduce",int.class)),
+			this.new Command("infer",getMethod("infer")),
+			this.new Command("infer",getMethod("infer",int.class)),
 			this.new Command("apply",getMethod("applyActivation",int.class)),
 			this.new Command("reset",getMethod("reset",int.class)),
 	};
@@ -130,12 +132,14 @@ public class ConsoleRewriter {
 				print(activation,state.step(i));	
 				System.out.println();
 			}
+			String currentHash = String.format("%08x",state.automaton().hashCode());
+			System.out.println("\nCurrent: " + currentHash + " (" + countUnvisited() + " / " + state.size() + " unvisited, " + System.identityHashCode(state) + "," + state.automaton().nStates() + ")");
 		} catch(IOException e) { System.err.println("I/O error printing automaton"); }
 	}
 	
 	private void print(Activation activation, RewriteStep step) {
 		if(activation.rule() instanceof InferenceRule) {
-			System.out.print(" *");
+			System.out.print("* ");
 		}
 		if(activation.rule().name() != null) {
 			System.out.print(activation.rule().name());
@@ -204,21 +208,53 @@ public class ConsoleRewriter {
 	}
 	
 	public void reduce() {
+		internalReduce();
+		print();
+	}
+	
+	public void internalReduce() {
 		int r;
 		while((r = selectFirstUnvisited(ReductionRule.class)) != -1) {
 			RewriteStep step = rewriter.apply(r);
 			history.add(step);
-		}
-		print();
+		}		
 	}
 	
 	public void reduce(int count) {
+		internalReduce(count);
+		print();
+	}
+	
+	public void internalReduce(int count) {
 		int r;
 		while(count >= 0 && (r = selectFirstUnvisited(ReductionRule.class)) != -1) {
 			RewriteStep step = rewriter.apply(r);
 			history.add(step);
 			count = count - 1;
 		}
+		print();
+	}
+	
+	public void infer() {
+		int r;
+		internalReduce();
+		while((r = selectFirstUnvisited(InferenceRule.class)) != -1) {
+			RewriteStep step = rewriter.apply(r);
+			history.add(step);
+			internalReduce();
+		}
+		print();
+	}
+	
+	public void infer(int count) {
+		int r;
+		internalReduce();
+		while(count >= 0 && (r = selectFirstUnvisited(InferenceRule.class)) != -1) {
+			RewriteStep step = rewriter.apply(r);
+			history.add(step);
+			internalReduce();
+			count = count - 1;
+		}		
 		print();
 	}
 	
@@ -233,6 +269,17 @@ public class ConsoleRewriter {
 			}
 		}
 		return -1;
+	}
+	
+	public int countUnvisited() {
+		int count = 0;
+		RewriteState state = rewriter.state();
+		for(int i=0;i!=state.size();++i) {
+			if(state.step(i) == null) {
+				count++;
+			}
+		}
+		return count;
 	}
 	
 	public void reset(int id) {

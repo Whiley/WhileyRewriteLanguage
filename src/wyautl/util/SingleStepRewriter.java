@@ -61,13 +61,14 @@ public class SingleStepRewriter implements Rewriter {
 		RewriteState nextState;
 
 		if (target != Automaton.K_VOID && from != target) {
-			automaton.compact();
+			automaton.minimise();
+			automaton.compact();			
 			nextState = initialise(automaton);			
 		} else {
 			// activation did not apply
 			nextState = state;
 		}
-
+		
 		RewriteStep step = new RewriteStep(state, index, nextState);
 		state.update(index, step);
 		state = nextState;
