@@ -894,7 +894,6 @@ public final class Automaton {
 						return false;
 					}
 				} else if (!si.equals(ci)) {
-					diffAutomaton(this,a);
 					return false;
 				}
 			}
@@ -906,57 +905,6 @@ public final class Automaton {
 			return true;
 		}
 		return false;
-	}
-
-	private static void diffAutomaton(Automaton a1, Automaton a2) {
-		System.out.print("DIFF: " + System.identityHashCode(a1) + ", " + System.identityHashCode(a2) + " : ");
-		if(a1.nStates() != a2.nStates()) {
-			System.out.println("DIFFERENT NUMBER STATES");
-		}
-		for(int i=0;i!=a1.nStates();++i) {
-			State a1s = a1.states[i];
-			State a2s = a2.states[i];
-			diffState(i,a1s,a2s);			
-		}
-		System.out.println();
-	}
-	
-	private static void diffState(int index, Automaton.State a1s, Automaton.State a2s) {
-		if(a1s instanceof Automaton.Constant && a2s instanceof Automaton.Constant) {
-			diffState(index,(Automaton.Constant)a1s, (Automaton.Constant)a2s);
-		} else if(a1s instanceof Automaton.Term && a2s instanceof Automaton.Term) {
-			diffState(index,(Automaton.Term)a1s, (Automaton.Term)a2s);
-		} else if(a1s instanceof Automaton.Collection && a2s instanceof Automaton.Collection) {
-			diffState(index,(Automaton.Collection)a1s, (Automaton.Collection)a2s);
-		} 
-	}
-	
-	private static void diffState(int index, Automaton.Constant a1s, Automaton.Constant a2s) {
-		if(!a1s.value.equals(a2s.value)) {
-			System.out.print("[" + index + "] " + a1s.value + " != " + a2s.value);
-		}
-	}
-	
-	private static void diffState(int index, Automaton.Term a1s, Automaton.Term a2s) {
-		if(a1s.kind != a2s.kind) {
-			System.out.println("[" + index + "] " + "TERM KIND " + a1s.kind + "!=" + a2s.kind);
-		} else if(a1s.contents != a2s.contents) {
-			System.out.println("[" + index + "] " + "TERM CONTENTS " + a1s.contents + "!=" + a2s.contents);
-		}	
-	}
-	
-	private static void diffState(int index, Automaton.Collection a1s, Automaton.Collection a2s) {
-		if(a1s.kind != a2s.kind) {
-			System.out.println("[" + index + "] " + "COLLECTION KIND " + a1s.kind + "!=" + a2s.kind);
-		} else if(a1s.length != a2s.length) {
-			System.out.println("[" + index + "] " + "COLLECTION LENGTH " + a1s.length + "!=" + a2s.length);
-		} else {
-			for(int i=0;i!=a1s.length;++i) {
-				if(a1s.children[i] != a2s.children[i]) {
-					System.out.println("[" + index + "] " + "COLLECTION CHILD(" + i + ") " + a1s.children[i] + "!=" + a2s.children[i]);
-				}
-			}
-		}
 	}
 	
 	/**
