@@ -1,6 +1,8 @@
 package wyautl.util;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Comparator;
 
 import wyautl.core.*;
 import wyautl.rw.*;
@@ -19,17 +21,28 @@ public class SingleStepRewriter implements Rewriter {
 	private final RewriteRule[] rules;
 	
 	/**
+	 * Used to sort activations generated for a given state. This allows for
+	 * some heuristics which reduce the amount of rewriting required.
+	 */
+	private final Comparator<Activation> comparator;
+	
+	/**
 	 * The current state of the rewriter
 	 */
 	private RewriteState state;
 	
-	
-	public SingleStepRewriter(Automaton automaton, Schema schema, RewriteRule[] rules) {		
-		this.schema = schema;
-		this.rules = rules;		
-		this.state = initialise(automaton);
+	public SingleStepRewriter(Automaton automaton, Schema schema, RewriteRule... rules) {
+		this(automaton,schema,Activation.RANK_COMPARATOR,rules);
 	}
 
+	public SingleStepRewriter(Automaton automaton, Schema schema, Comparator<Activation> comparator,
+			RewriteRule... rules) {
+		this.schema = schema;
+		this.rules = rules;
+		this.comparator = comparator;
+		this.state = initialise(automaton);
+	}
+	
 	@Override
 	public RewriteState state() {
 		return state;
@@ -95,6 +108,9 @@ public class SingleStepRewriter implements Rewriter {
 			}
 		}
 		Activation[] array = activations.toArray(new Activation[activations.size()]);
+		if(comparator != null) {
+			Arrays.sort(array,comparator);
+		}
 		return new RewriteState(automaton, array);
 	}
 }

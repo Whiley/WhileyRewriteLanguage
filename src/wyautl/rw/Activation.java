@@ -26,6 +26,7 @@
 package wyautl.rw;
 
 import java.util.BitSet;
+import java.util.Comparator;
 
 import wyautl.core.Automaton;
 
@@ -60,7 +61,7 @@ public final class Activation {
 	 */
 	private final int[] state;
 
-	public Activation(RewriteRule rule, BitSet dependencies, int[] state) {
+	public Activation(RewriteRule rule, BitSet dependencies, int[] state) {		
 		this.rule = rule;
 		this.dependencies = dependencies;
 		this.state = state;
@@ -108,5 +109,71 @@ public final class Activation {
 	 */
 	public int apply(Automaton automaton) {
 		return rule.apply(automaton, state);
+	}
+	
+	/**
+	 * Constant comparator for use with rewriters.
+	 */
+	public static final RankComparator RANK_COMPARATOR = new RankComparator();
+	
+	/**
+	 * A simple comparator for comparing activations based primarily on rule
+	 * rank.
+	 *
+	 * @param <Activation>
+	 */
+	public static final class RankComparator implements Comparator<Activation> {
+
+		@Override
+		public int compare(Activation a1, Activation a2) {
+			final RewriteRule r1 = a1.rule;
+			final RewriteRule r2 = a2.rule;
+			
+			// First, stratify based on rule class
+			if (r1 instanceof ReductionRule && r2 instanceof InferenceRule) {
+				return -1;
+			} else if (r1 instanceof InferenceRule && r2 instanceof ReductionRule) {
+				return 1;
+			}
+			
+			// ===============================
+			final int r1_rank = r1.rank();
+			final int r2_rank = r2.rank();
+			
+			if(r1_rank < r2_rank) {
+				return -1;
+			} else if(r1_rank > r2_rank) {
+				return 1;
+			} 
+			
+			// ===============================			
+			final int a1_root = a1.root();
+			final int a2_root = a2.root();
+			
+			if(a1_root < a2_root) {
+				return -1;
+			} else if(a1_root > a2_root) {
+				return 1;
+			}
+			
+			// ===============================
+			final int[] a1_state = a1.state;
+			final int[] a2_state = a2.state;
+			if(a1_state.length < a2_state.length) {
+				return -1; 
+			} else if(a1_state.length > a2_state.length) {
+				return 1;
+			}
+			for(int i=0;i!=a1_state.length;++i) {
+				int a1e = a1_state[i];
+				int a2e = a2_state[i];
+				if(a1e < a2e) {
+					return -1;
+				} else if(a1e > a2e) {
+					return 1;
+				}
+			}
+			return 0;
+		}		
 	}
 }
