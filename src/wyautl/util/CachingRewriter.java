@@ -34,20 +34,26 @@ public class CachingRewriter implements Rewriter {
 	@Override
 	public RewriteStep apply(int choice) {
 		RewriteStep step = rewriter.apply(choice);
-		// At this point, we check whether or not we have previously encountered
-		// this state.
-		Automaton automaton = step.after().automaton();
-		RewriteState after = cache.get(automaton);
-		if (after != null) {			
-			// indicates a state we have previously encountered			
-			RewriteState before = step.before();
-			step = new RewriteStep(before, choice, after);
-			before.update(choice, step);
-			rewriter.reset(after);
-		} else {
-			// this is a new state
-			cache.put(automaton, step.after());
-		}		
+		RewriteState before = step.before();
+		RewriteState after = step.after();
+		if (before != after) {
+			// A new state was generated. The next question is whether or not
+			// we've seen it before.
+			Automaton automaton = after.automaton();
+			after = cache.get(automaton);
+			if (after != null) {
+				// Yes, we have seen this state before. Hence, we return the
+				// cache state as this will identify activations previously
+				// applied.
+				step = new RewriteStep(before, choice, after);
+				before.update(choice, step);
+				rewriter.reset(after);
+			} else {
+				// Now, this is a completely new state. Therefore, we put it in
+				// the cache so that we can check it in the future.
+				cache.put(automaton, step.after());
+			}
+		}
 		return step;
-	}			
+	}		
 }
