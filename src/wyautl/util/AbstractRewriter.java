@@ -69,7 +69,12 @@ public abstract class AbstractRewriter implements Rewriter {
 	
 	@Override	
 	public RewriteStep apply() {
-		return apply(selectFirstUnvisited());
+		int r;
+		while((r = selectFirstUnvisited(state))!= -1) {
+			RewriteStep step = apply(r);
+		} 
+		// This doesn't make sense
+		return new RewriteStep(state,0,state);		
 	}
 	
 	/**
@@ -98,7 +103,7 @@ public abstract class AbstractRewriter implements Rewriter {
 		return new RewriteState(automaton, array);
 	}
 	
-	protected int selectFirstUnvisited() {
+	public static int selectFirstUnvisited(RewriteState state) {
 		for(int i=0;i!=state.size();++i) {
 			if(state.step(i) == null) {
 				return i;

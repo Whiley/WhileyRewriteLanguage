@@ -24,19 +24,21 @@ public class EncapsulatedRewriter extends AbstractRewriter implements Rewriter {
 	public EncapsulatedRewriter(Constructor constructor, Automaton automaton, Schema schema,
 			Comparator<Activation> comparator, RewriteRule... rules) {
 		super(schema, comparator, rules);
-		this.constructor = constructor;
-		this.state = initialise(automaton);
+		this.constructor = constructor;		
+		this.state = initialise(automaton);		
 	}
 	
 	@Override
-	public RewriteStep apply(int index) {
+	public RewriteStep apply(int index) {		
 		Activation activation = state.activation(index);
 		Automaton automaton = new Automaton(state.automaton());
-		int from = activation.root();
-		int target = activation.apply(automaton);
+		int from = activation.root();		
+		int target = activation.apply(automaton);		
 		RewriteState nextState;
 
-		if (target != Automaton.K_VOID && from != target) {
+		if (target != Automaton.K_VOID && from != target) {			
+			automaton.minimise();
+			automaton.compact();			
 			nextState = initialise(automaton);
 		} else {
 			// activation did not apply
@@ -49,9 +51,9 @@ public class EncapsulatedRewriter extends AbstractRewriter implements Rewriter {
 		return step;
 	}
 	
-	protected RewriteState initialise(Automaton automaton) {	
-		Rewriter rewriter = constructor.construct(automaton);
-		RewriteStep step = rewriter.apply();
+	protected RewriteState initialise(Automaton automaton) {		
+		Rewriter rewriter = constructor.construct(automaton);		
+		RewriteStep step = rewriter.apply();		
 		return super.initialise(step.after().automaton());
 	}
 	

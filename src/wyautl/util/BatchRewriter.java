@@ -28,12 +28,11 @@ public class BatchRewriter extends AbstractRewriter implements Rewriter {
 		RewriteState before = state;
 		Automaton automaton = new Automaton(state.automaton());
 		int r;
-		while ((r = selectFirstUnvisited()) != -1) {
-			state = inplaceRewrite(r, automaton);
+		while ((r = selectFirstUnvisited(state)) != -1) {
+			RewriteState nextState = inplaceRewrite(r, automaton);
+			state.update(r, new RewriteStep(state,r,nextState));
+			state = nextState;			
 		}
-		// Finally, minimise and compact the automaton
-		automaton.minimise();
-		automaton.compact();
 		//
 		return new RewriteStep(before, index, state);
 	}

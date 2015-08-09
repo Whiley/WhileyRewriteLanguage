@@ -38,8 +38,13 @@ public class CachingRewriter implements Rewriter {
 	
 	@Override
 	public RewriteStep apply() {
-		return cacheLookup(rewriter.apply());
-	}
+		int r;
+		while ((r = AbstractRewriter.selectFirstUnvisited(rewriter.state())) != -1) {
+			RewriteStep step = cacheLookup(apply(r));
+		}
+		// This doesn't make sense
+		return new RewriteStep(rewriter.state(), 0, rewriter.state());
+	}	
 	
 	private RewriteStep cacheLookup(RewriteStep step) {
 		RewriteState before = step.before();

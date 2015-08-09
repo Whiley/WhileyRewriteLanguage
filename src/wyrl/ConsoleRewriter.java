@@ -16,6 +16,7 @@ import wyautl.io.PrettyAutomataWriter;
 import wyautl.rw.*;
 import wyautl.util.BatchRewriter;
 import wyautl.util.CachingRewriter;
+import wyautl.util.EncapsulatedRewriter;
 import wyautl.util.SingleStepRewriter;
 
 /**
@@ -33,9 +34,15 @@ public class ConsoleRewriter {
 	private final Schema schema;
 	
 	/**
-	 * Set of rewrite rules for use in this session
+	 * Set of reduction rules for use in this session
 	 */
-	private final RewriteRule[] rules;
+	private final ReductionRule[] reductions;
+	
+	/**
+	 * Set of inference rules for use in this session
+	 */
+	private final InferenceRule[] inferences;
+	
 	
 	/**
 	 * Rewriter being used in this session
@@ -63,6 +70,11 @@ public class ConsoleRewriter {
 	private boolean singleStep = true;
 	
 	/**
+	 * Hide reduction rewrites
+	 */
+	private boolean hiding = false;	
+	
+	/**
 	 * If true, generate verbose information about rewriting.
 	 */
 	private boolean verbose;
@@ -72,11 +84,10 @@ public class ConsoleRewriter {
 	 */
 	private final ArrayList<RewriteStep> history = new ArrayList<RewriteStep>();
 	
-	public ConsoleRewriter(Schema schema, InferenceRule[] inferences, RewriteRule[] reductions) {
+	public ConsoleRewriter(Schema schema, InferenceRule[] inferences, ReductionRule[] reductions) {
 		this.schema = schema;
-		this.rules = new RewriteRule[inferences.length + reductions.length];
-		System.arraycopy(inferences, 0, rules, 0, inferences.length);
-		System.arraycopy(reductions, 0, rules, inferences.length, reductions.length);
+		this.inferences = inferences;
+		this.reductions = reductions;		
 	}
 	
 	// =========================================================================
@@ -99,6 +110,7 @@ public class ConsoleRewriter {
 			this.new Command("indices",getMethod("setIndices",boolean.class)),
 			this.new Command("caching",getMethod("setCaching",boolean.class)),
 			this.new Command("batch",getMethod("setBatch",boolean.class)),
+			this.new Command("hiding",getMethod("setHiding",boolean.class)),
 			this.new Command("log",getMethod("printLog")),
 			this.new Command("rewrite",getMethod("startRewrite",String.class)),
 			this.new Command("load",getMethod("loadRewrite",String.class)),
@@ -188,6 +200,10 @@ public class ConsoleRewriter {
 		this.singleStep = !flag;
 	}
 	
+	public void setHiding(boolean flag) {
+		this.hiding = flag;
+	}
+	
 	public void loadRewrite(String input) throws Exception {
 		FileReader reader = new FileReader(input);
 		startRewrite(reader);
@@ -200,21 +216,39 @@ public class ConsoleRewriter {
 	public void startRewrite(Reader input) throws Exception {
 		PrettyAutomataReader reader = new PrettyAutomataReader(input, schema);
 		Automaton automaton = reader.read();		
-		rewriter = constructRewriter(automaton,schema,rules);
+		rewriter = constructRewriter(automaton,schema,reductions,inferences);
 		print();
 	}
 	
-	private Rewriter constructRewriter(Automaton automaton, Schema schema, RewriteRule[] rules) {
+	private Rewriter constructRewriter(Automaton automaton, final Schema schema, final ReductionRule[] reductions, InferenceRule[] inferences) {
 		Rewriter rewriter;
-		if(singleStep) {
-			rewriter = new SingleStepRewriter(automaton,schema,rules);		
+		if(hiding) {
+			EncapsulatedRewriter.Constructor constructor = new EncapsulatedRewriter.Constructor() {
+				@Override
+				public Rewriter construct(Automaton automaton) {
+					return new BatchRewriter(automaton,schema,reductions);
+				}				
+			};
+			rewriter = new EncapsulatedRewriter(constructor,automaton,schema,Activation.RANK_COMPARATOR,inferences); 
 		} else {
-			rewriter = new BatchRewriter(automaton,schema,rules);
+			RewriteRule[] rules = append(reductions,inferences);
+			if(singleStep) {
+				rewriter = new SingleStepRewriter(automaton,schema,rules);		
+			} else {
+				rewriter = new BatchRewriter(automaton,schema,rules);
+			}			
 		}
 		if(caching) {
 			rewriter = new CachingRewriter(rewriter);
 		}
 		return rewriter;
+	}
+	
+	private RewriteRule[] append(RewriteRule[] lhs, RewriteRule[] rhs) {
+		RewriteRule[] rules = new RewriteRule[lhs.length+rhs.length];
+		System.arraycopy(lhs, 0, rules, 0, lhs.length);
+		System.arraycopy(rhs, 0, rules, lhs.length, rhs.length);
+		return rules;
 	}
 	
 	public void applyActivation(int activation) {
