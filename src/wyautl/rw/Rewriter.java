@@ -53,12 +53,20 @@ public interface Rewriter {
 	public void reset(RewriteState state);
 	
 	/**
-	 * Apply the rewriter to a given state by taking one of the available
+	 * Apply the rewriter to the current state by taking one of the available
 	 * choices.  The choice taken must be valid for the state.
 	 *
 	 * @param state
 	 * @param choice
 	 * @return
 	 */
-	public RewriteStep apply(int choice);	
+	public RewriteStep apply(int choice);
+	
+	/**
+	 * Apply the rewriter to the current state. The rewrite determines which of
+	 * the possible activations to apply.
+	 * 
+	 * @return
+	 */
+	public RewriteStep apply();
 }

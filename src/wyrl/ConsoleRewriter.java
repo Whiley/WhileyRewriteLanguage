@@ -14,6 +14,7 @@ import wyautl.core.*;
 import wyautl.io.PrettyAutomataReader;
 import wyautl.io.PrettyAutomataWriter;
 import wyautl.rw.*;
+import wyautl.util.BatchRewriter;
 import wyautl.util.CachingRewriter;
 import wyautl.util.SingleStepRewriter;
 
@@ -57,6 +58,11 @@ public class ConsoleRewriter {
 	private boolean caching = true;
 	
 	/**
+	 * Single step rewriting
+	 */
+	private boolean singleStep = true;
+	
+	/**
 	 * If true, generate verbose information about rewriting.
 	 */
 	private boolean verbose;
@@ -92,6 +98,7 @@ public class ConsoleRewriter {
 			this.new Command("indent",getMethod("setIndent",String[].class)),
 			this.new Command("indices",getMethod("setIndices",boolean.class)),
 			this.new Command("caching",getMethod("setCaching",boolean.class)),
+			this.new Command("batch",getMethod("setBatch",boolean.class)),
 			this.new Command("log",getMethod("printLog")),
 			this.new Command("rewrite",getMethod("startRewrite",String.class)),
 			this.new Command("load",getMethod("loadRewrite",String.class)),
@@ -177,6 +184,10 @@ public class ConsoleRewriter {
 		this.caching = flag;
 	}
 	
+	public void setBatch(boolean flag) {
+		this.singleStep = !flag;
+	}
+	
 	public void loadRewrite(String input) throws Exception {
 		FileReader reader = new FileReader(input);
 		startRewrite(reader);
@@ -194,7 +205,12 @@ public class ConsoleRewriter {
 	}
 	
 	private Rewriter constructRewriter(Automaton automaton, Schema schema, RewriteRule[] rules) {
-		Rewriter rewriter = new SingleStepRewriter(automaton,schema,rules);
+		Rewriter rewriter;
+		if(singleStep) {
+			rewriter = new SingleStepRewriter(automaton,schema,rules);		
+		} else {
+			rewriter = new BatchRewriter(automaton,schema,rules);
+		}
 		if(caching) {
 			rewriter = new CachingRewriter(rewriter);
 		}

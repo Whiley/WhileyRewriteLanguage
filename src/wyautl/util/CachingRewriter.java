@@ -33,7 +33,15 @@ public class CachingRewriter implements Rewriter {
 
 	@Override
 	public RewriteStep apply(int choice) {
-		RewriteStep step = rewriter.apply(choice);
+		return cacheLookup(rewriter.apply(choice));
+	}		
+	
+	@Override
+	public RewriteStep apply() {
+		return cacheLookup(rewriter.apply());
+	}
+	
+	private RewriteStep cacheLookup(RewriteStep step) {
 		RewriteState before = step.before();
 		RewriteState after = step.after();
 		if (before != after) {
@@ -45,8 +53,8 @@ public class CachingRewriter implements Rewriter {
 				// Yes, we have seen this state before. Hence, we return the
 				// cache state as this will identify activations previously
 				// applied.
-				step = new RewriteStep(before, choice, after);
-				before.update(choice, step);
+				step = new RewriteStep(before, step.activation(), after);
+				before.update(step.activation(), step);
 				rewriter.reset(after);
 			} else {
 				// Now, this is a completely new state. Therefore, we put it in
@@ -55,5 +63,5 @@ public class CachingRewriter implements Rewriter {
 			}
 		}
 		return step;
-	}		
+	}
 }

@@ -51,7 +51,7 @@ public final class Main {
 			RewriteRule[] rules = new RewriteRule[inferences.length + reductions.length];
 			System.arraycopy(inferences, 0, rules, 0, inferences.length);
 			System.arraycopy(reductions, 0, rules, inferences.length, reductions.length);
-			SimpleRewriter rewriter = new SimpleRewriter(automaton,Logic.SCHEMA,rules);
+			SingleStepRewriter rewriter = new SingleStepRewriter(automaton,Logic.SCHEMA,rules);
 			int count = 0;
 			while(rewriter.state().size() > 0) {
 			    rewriter.apply(0);
