@@ -1,5 +1,8 @@
 package wyautl.util;
 
+import java.util.ArrayList;
+
+import wyautl.rw.RewriteProof;
 import wyautl.rw.RewriteState;
 import wyautl.rw.RewriteStep;
 import wyautl.rw.Rewriter;
@@ -30,16 +33,17 @@ public class ThrottledRewriter implements Rewriter {
 	}
 
 	@Override
-	public RewriteStep apply() {
+	public RewriteProof apply() {
 		int r;
+		ArrayList<RewriteStep> steps = new ArrayList<RewriteStep>();
 		RewriteState state = rewriter.state();
 		int count = 0;
 		while (count < maxSteps && (r = AbstractRewriter.selectFirstUnvisited(state)) != -1) {
 			RewriteStep step = apply(r);
+			steps.add(step);
 			state = step.after();
 			count = count + 1;
-		} 
-		// This doesn't make sense
-		return new RewriteStep(state,0,state);	
+		}
+		return new RewriteProof(steps.toArray(new RewriteStep[steps.size()]));
 	}
 }

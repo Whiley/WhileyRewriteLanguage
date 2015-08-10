@@ -53,8 +53,10 @@ public interface Rewriter {
 	public void reset(RewriteState state);
 	
 	/**
-	 * Apply the rewriter to the current state by taking one of the available
-	 * choices.  The choice taken must be valid for the state.
+	 * Make the rewriter apply a single specified rewrite step. This is useful
+	 * for interactive or debugging modes where, for example, the user can
+	 * specify exactly which steps to take. The choice taken must be valid for
+	 * the state.
 	 *
 	 * @param state
 	 * @param choice
@@ -63,10 +65,11 @@ public interface Rewriter {
 	public RewriteStep apply(int choice);
 	
 	/**
-	 * Apply the rewriter to the current state. The rewrite determines which of
-	 * the possible activations to apply.
+	 * Apply the rewriter to the current state to rewrite as much as possible.
+	 * This produces a rewrite "proof" which identifies the steps taken during
+	 * rewriting.
 	 * 
 	 * @return
 	 */
-	public RewriteStep apply();
+	public RewriteProof apply();
 }

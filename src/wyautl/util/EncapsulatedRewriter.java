@@ -5,6 +5,7 @@ import java.util.Comparator;
 import wyautl.core.Automaton;
 import wyautl.core.Schema;
 import wyautl.rw.Activation;
+import wyautl.rw.RewriteProof;
 import wyautl.rw.RewriteRule;
 import wyautl.rw.RewriteState;
 import wyautl.rw.RewriteStep;
@@ -51,10 +52,13 @@ public class EncapsulatedRewriter extends AbstractRewriter implements Rewriter {
 		return step;
 	}
 	
-	protected RewriteState initialise(Automaton automaton) {		
+	protected RewriteState initialise(Automaton automaton) {
 		Rewriter rewriter = constructor.construct(automaton);		
-		RewriteStep step = rewriter.apply();		
-		return super.initialise(step.after().automaton());
+		RewriteProof proof = rewriter.apply();		
+		if(proof.size() > 0) {
+			automaton = proof.last().automaton();
+		}
+		return super.initialise(automaton); 
 	}
 	
 	public static interface Constructor {

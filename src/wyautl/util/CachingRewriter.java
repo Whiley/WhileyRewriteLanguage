@@ -1,5 +1,6 @@
 package wyautl.util;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 
 import wyautl.core.Automaton;
@@ -37,14 +38,15 @@ public class CachingRewriter implements Rewriter {
 	}		
 	
 	@Override
-	public RewriteStep apply() {
+	public RewriteProof apply() {
+		ArrayList<RewriteStep> steps = new ArrayList<RewriteStep>();
 		int r;
 		while ((r = AbstractRewriter.selectFirstUnvisited(rewriter.state())) != -1) {
 			RewriteStep step = cacheLookup(apply(r));
+			steps.add(step);
 		}
-		// This doesn't make sense
-		return new RewriteStep(rewriter.state(), 0, rewriter.state());
-	}	
+		return new RewriteProof(steps.toArray(new RewriteStep[steps.size()]));
+	}
 	
 	private RewriteStep cacheLookup(RewriteStep step) {
 		RewriteState before = step.before();

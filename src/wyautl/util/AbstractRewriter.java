@@ -68,13 +68,14 @@ public abstract class AbstractRewriter implements Rewriter {
 	public abstract RewriteStep apply(int choice);
 	
 	@Override	
-	public RewriteStep apply() {
+	public RewriteProof apply() {
+		ArrayList<RewriteStep> steps = new ArrayList<RewriteStep>();
 		int r;
-		while((r = selectFirstUnvisited(state))!= -1) {
+		while ((r = selectFirstUnvisited(state)) != -1) {
 			RewriteStep step = apply(r);
-		} 
-		// This doesn't make sense
-		return new RewriteStep(state,0,state);		
+			steps.add(step);
+		}
+		return new RewriteProof(steps.toArray(new RewriteStep[steps.size()]));
 	}
 	
 	/**
