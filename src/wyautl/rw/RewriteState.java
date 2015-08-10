@@ -52,4 +52,18 @@ public class RewriteState {
 	public void update(int index, RewriteStep step) {		
 		this.steps[index] = step;
 	}	
+	
+	/**
+	 * Select the first unvisited state, or return -1 if none exists.
+	 * 
+	 * @return
+	 */
+	public int select() {
+		for(int i=0;i!=steps.length;++i) {
+			if(steps[i] == null) {
+				return i;
+			}
+		}
+		return -1;
+	}
 }

@@ -2,6 +2,7 @@ package wyautl.util;
 
 import java.util.ArrayList;
 
+import wyautl.core.Automaton;
 import wyautl.rw.RewriteProof;
 import wyautl.rw.RewriteState;
 import wyautl.rw.RewriteStep;
@@ -18,32 +19,26 @@ public class ThrottledRewriter implements Rewriter {
 	}
 
 	@Override
-	public RewriteState state() {
-		return rewriter.state();
+	public RewriteStep apply(RewriteState state, int choice) {
+		return rewriter.apply(state, choice);
 	}
 
 	@Override
-	public void reset(RewriteState state) {
-		rewriter.reset(state);
-	}
-
-	@Override
-	public RewriteStep apply(int choice) {
-		return rewriter.apply(choice);
-	}
-
-	@Override
-	public RewriteProof apply() {
+	public RewriteProof apply(RewriteState state) {
 		int r;
 		ArrayList<RewriteStep> steps = new ArrayList<RewriteStep>();
-		RewriteState state = rewriter.state();
 		int count = 0;
-		while (count < maxSteps && (r = AbstractRewriter.selectFirstUnvisited(state)) != -1) {
-			RewriteStep step = apply(r);
+		while (count < maxSteps && (r = state.select()) != -1) {
+			RewriteStep step = apply(state, r);
 			steps.add(step);
 			state = step.after();
 			count = count + 1;
 		}
 		return new RewriteProof(steps.toArray(new RewriteStep[steps.size()]));
+	}
+
+	@Override
+	public RewriteState initialise(Automaton automaton) {
+		return rewriter.initialise(automaton);
 	}
 }

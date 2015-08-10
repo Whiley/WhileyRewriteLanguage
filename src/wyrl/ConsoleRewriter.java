@@ -50,6 +50,11 @@ public class ConsoleRewriter {
 	private Rewriter rewriter;
 	
 	/**
+	 * Current state of rewrite
+	 */
+	private RewriteState state;
+	
+	/**
 	 * List of indents being used
 	 */
 	private String[] indents = {};
@@ -139,7 +144,6 @@ public class ConsoleRewriter {
 	
 	public void print() {
 		try {
-			RewriteState state = rewriter.state(); 
 			PrettyAutomataWriter writer = new PrettyAutomataWriter(System.out,schema,indents);
 			writer.setIndices(indices);
 			writer.write(state.automaton());
@@ -225,22 +229,22 @@ public class ConsoleRewriter {
 		if(hiding) {
 			EncapsulatedRewriter.Constructor constructor = new EncapsulatedRewriter.Constructor() {
 				@Override
-				public Rewriter construct(Automaton automaton) {
-					return new BatchRewriter(automaton,schema,reductions);
+				public Rewriter construct() {
+					return new BatchRewriter(schema,reductions);
 				}				
 			};
 			rewriter = new EncapsulatedRewriter(constructor,automaton,schema,Activation.RANK_COMPARATOR,inferences); 
 		} else {
 			RewriteRule[] rules = append(reductions,inferences);
 			if(singleStep) {
-				rewriter = new SingleStepRewriter(automaton,schema,rules);		
+				rewriter = new SingleStepRewriter(schema,rules);		
 			} else {
-				rewriter = new BatchRewriter(automaton,schema,rules);
+				rewriter = new BatchRewriter(schema,rules);
 			}			
 		}
 		if(caching) {
 			rewriter = new CachingRewriter(rewriter);
-		}
+		}		
 		return rewriter;
 	}
 	
@@ -264,8 +268,8 @@ public class ConsoleRewriter {
 	
 	public void internalReduce() {
 		int r;
-		while((r = selectFirstUnvisited(ReductionRule.class)) != -1) {
-			RewriteStep step = rewriter.apply(r);
+		while((r = state.select()) != -1) {
+			RewriteStep step = rewriter.apply(state,r);
 			history.add(step);
 		}		
 	}
@@ -306,19 +310,6 @@ public class ConsoleRewriter {
 			count = count - 1;
 		}		
 		print();
-	}
-	
-	private <T extends RewriteRule> int selectFirstUnvisited(Class<T> kind) {
-		RewriteState state = rewriter.state();
-		for(int i=0;i!=state.size();++i) {
-			if(state.step(i) == null) {
-				Activation activation = state.activation(i);
-				if(kind.isInstance(activation.rule())) {
-					return i;
-				}
-			}
-		}
-		return -1;
 	}
 	
 	public int countUnvisited() {

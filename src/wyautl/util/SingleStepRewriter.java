@@ -10,13 +10,13 @@ import wyautl.rw.*;
 public class SingleStepRewriter extends AbstractRewriter implements Rewriter {
 	
 	
-	public SingleStepRewriter(Automaton automaton, Schema schema, RewriteRule... rules) {
-		super(automaton,schema,Activation.RANK_COMPARATOR,rules);
+	public SingleStepRewriter(Schema schema, RewriteRule... rules) {
+		super(schema,Activation.RANK_COMPARATOR,rules);
 	}
 
-	public SingleStepRewriter(Automaton automaton, Schema schema, Comparator<Activation> comparator,
+	public SingleStepRewriter(Schema schema, Comparator<Activation> comparator,
 			RewriteRule... rules) {
-		super(automaton,schema,comparator,rules);
+		super(schema,comparator,rules);
 	}
 	
 	/**
@@ -27,7 +27,7 @@ public class SingleStepRewriter extends AbstractRewriter implements Rewriter {
 	 * @return
 	 */
 	@Override
-	public RewriteStep apply(int index) {
+	public RewriteStep apply(RewriteState state, int index) {
 		Activation activation = state.activation(index);
 		Automaton automaton = new Automaton(state.automaton());
 		int from = activation.root();
@@ -45,7 +45,6 @@ public class SingleStepRewriter extends AbstractRewriter implements Rewriter {
 		
 		RewriteStep step = new RewriteStep(state, index, nextState);
 		state.update(index, step);
-		state = nextState;
 		return step;
-	}	
+	}		
 }

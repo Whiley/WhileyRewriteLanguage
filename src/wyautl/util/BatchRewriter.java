@@ -7,13 +7,13 @@ import wyautl.rw.*;
 
 public class BatchRewriter extends AbstractRewriter implements Rewriter {
 	
-	public BatchRewriter(Automaton automaton, Schema schema, RewriteRule... rules) {
-		super(automaton,schema,Activation.RANK_COMPARATOR,rules);
+	public BatchRewriter(Schema schema, RewriteRule... rules) {
+		super(schema,Activation.RANK_COMPARATOR,rules);
 	}
 
-	public BatchRewriter(Automaton automaton, Schema schema, Comparator<Activation> comparator,
+	public BatchRewriter(Schema schema, Comparator<Activation> comparator,
 			RewriteRule... rules) {
-		super(automaton,schema,comparator,rules);
+		super(schema,comparator,rules);
 	}
 		
 	/**
@@ -24,17 +24,26 @@ public class BatchRewriter extends AbstractRewriter implements Rewriter {
 	 * @return
 	 */
 	@Override
-	public RewriteStep apply(int index) {
+	public RewriteStep apply(RewriteState state, int index) {
 		RewriteState before = state;
 		Automaton automaton = new Automaton(state.automaton());
 		int r;
-		while ((r = selectFirstUnvisited(state)) != -1) {
-			RewriteState nextState = inplaceRewrite(r, automaton);
-			state.update(r, new RewriteStep(state,r,nextState));
-			state = nextState;			
+		while ((r = state.select()) != -1) {
+			if(inplaceRewrite(state.activation(r), automaton)) {
+				// In this case, something changed so we'd better create our new
+				// state.
+				state = initialise(automaton);				
+			} else {
+				// This is required to cross out any states which don't actually
+				// apply, otherwise we end up in an infinite loop reapplying
+				// them here.
+				state.update(r, new RewriteStep(state,r,state));
+			}
 		}
 		//
-		return new RewriteStep(before, index, state);
+		RewriteStep step = new RewriteStep(before, index, state);
+		before.update(index, step);
+		return step; 
 	}
 	
 	/**
@@ -45,8 +54,7 @@ public class BatchRewriter extends AbstractRewriter implements Rewriter {
 	 * @param automaton
 	 * @return
 	 */
-	private RewriteState inplaceRewrite(int index, Automaton automaton) {
-		Activation activation = state.activation(index);
+	private boolean inplaceRewrite(Activation activation, Automaton automaton) {
 		int from = activation.root();
 		int target = activation.apply(automaton);
 		RewriteState nextState;
@@ -55,11 +63,10 @@ public class BatchRewriter extends AbstractRewriter implements Rewriter {
 			// TODO: can we get rid of this?
 			automaton.minimise();
 			automaton.compact();
-			nextState = initialise(automaton);
+			return true;
 		} else {
 			// activation did not apply
-			nextState = state;
+			return false;
 		}
-		return nextState;
 	}
 }

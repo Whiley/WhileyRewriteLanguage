@@ -25,6 +25,7 @@
 
 package wyautl.rw;
 
+import wyautl.core.Automaton;
 
 /**
  * Represents the (abstract) mechanism for controlling the rewriting of a given
@@ -37,39 +38,31 @@ package wyautl.rw;
 public interface Rewriter {
 
 	/**
-	 * Access the working state of the rewriter. This state can then be
-	 * inspected to see choose the next activation.
+	 * Initialise a fresh state from a given automaton.
 	 * 
+	 * @param automaton
 	 * @return
 	 */
-	public RewriteState state();
+	public RewriteState initialise(Automaton automaton);
 	
 	/**
-	 * Reset the working state to a previous state. This allows the rewrite to
-	 * reset any internal data structures as well.
-	 * 
-	 * @param state
-	 */
-	public void reset(RewriteState state);
-	
-	/**
-	 * Make the rewriter apply a single specified rewrite step. This is useful
-	 * for interactive or debugging modes where, for example, the user can
-	 * specify exactly which steps to take. The choice taken must be valid for
-	 * the state.
+	 * Make the rewriter apply a single specified rewrite step to a given state.
+	 * This is useful for interactive or debugging modes where, for example, the
+	 * user can specify exactly which steps to take. The choice taken must be
+	 * valid for the state.
 	 *
 	 * @param state
 	 * @param choice
 	 * @return
 	 */
-	public RewriteStep apply(int choice);
+	public RewriteStep apply(RewriteState state, int choice);
 	
 	/**
-	 * Apply the rewriter to the current state to rewrite as much as possible.
+	 * Apply the rewriter to a given state to rewrite as much as possible.
 	 * This produces a rewrite "proof" which identifies the steps taken during
 	 * rewriting.
 	 * 
 	 * @return
 	 */
-	public RewriteProof apply();
+	public RewriteProof apply(RewriteState state);
 }

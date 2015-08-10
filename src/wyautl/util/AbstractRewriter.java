@@ -27,11 +27,6 @@ public abstract class AbstractRewriter implements Rewriter {
 	 * some heuristics which reduce the amount of rewriting required.
 	 */
 	protected final Comparator<Activation> comparator;
-	
-	/**
-	 * The current state of the rewriter
-	 */
-	protected RewriteState state;
 
 	public AbstractRewriter(Schema schema, Comparator<Activation> comparator,
 			RewriteRule... rules) {
@@ -40,40 +35,17 @@ public abstract class AbstractRewriter implements Rewriter {
 		this.comparator = comparator;
 	}
 	
-	public AbstractRewriter(Automaton automaton, Schema schema, Comparator<Activation> comparator,
-			RewriteRule... rules) {
-		this.schema = schema;
-		this.rules = rules;
-		this.comparator = comparator;
-		this.state = initialise(automaton);
-	}
+	@Override
+	public abstract RewriteStep apply(RewriteState state, int choice);
 	
 	@Override
-	public RewriteState state() {
-		return state;
-	}
-
-	/**
-	 * Reset the rewriter to a previous state. This is useful for backtracking,
-	 * amongst other things.
-	 * 
-	 * @param state
-	 */
-	@Override
-	public void reset(RewriteState state) {
-		this.state = state;
-	}
-	
-	@Override
-	public abstract RewriteStep apply(int choice);
-	
-	@Override	
-	public RewriteProof apply() {
+	public RewriteProof apply(RewriteState state) {
 		ArrayList<RewriteStep> steps = new ArrayList<RewriteStep>();
 		int r;
-		while ((r = selectFirstUnvisited(state)) != -1) {
-			RewriteStep step = apply(r);
-			steps.add(step);
+		while ((r = state.select()) != -1) {
+			RewriteStep step = apply(state,r);
+			state = step.after();
+			steps.add(step);			
 		}
 		return new RewriteProof(steps.toArray(new RewriteStep[steps.size()]));
 	}
@@ -85,7 +57,8 @@ public abstract class AbstractRewriter implements Rewriter {
 	 * @param automaton
 	 * @return
 	 */
-	protected RewriteState initialise(Automaton automaton) {
+	@Override
+	public RewriteState initialise(Automaton automaton) {
 		ArrayList<Activation> activations = new ArrayList<Activation>();
 		for (int s = 0; s != automaton.nStates(); ++s) {
 			Automaton.State state = automaton.get(s);
@@ -102,14 +75,5 @@ public abstract class AbstractRewriter implements Rewriter {
 			Arrays.sort(array,comparator);
 		}
 		return new RewriteState(automaton, array);
-	}
-	
-	public static int selectFirstUnvisited(RewriteState state) {
-		for(int i=0;i!=state.size();++i) {
-			if(state.step(i) == null) {
-				return i;
-			}
-		}
-		return -1;
 	}
 }

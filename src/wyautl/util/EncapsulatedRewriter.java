@@ -22,15 +22,14 @@ import wyautl.rw.Rewriter;
 public class EncapsulatedRewriter extends AbstractRewriter implements Rewriter {
 	private final Constructor constructor;
 		
-	public EncapsulatedRewriter(Constructor constructor, Automaton automaton, Schema schema,
+	public EncapsulatedRewriter(Constructor constructor, Schema schema,
 			Comparator<Activation> comparator, RewriteRule... rules) {
 		super(schema, comparator, rules);
-		this.constructor = constructor;		
-		this.state = initialise(automaton);		
+		this.constructor = constructor;			
 	}
-	
+		
 	@Override
-	public RewriteStep apply(int index) {		
+	public RewriteStep apply(RewriteState state, int index) {	
 		Activation activation = state.activation(index);
 		Automaton automaton = new Automaton(state.automaton());
 		int from = activation.root();		
@@ -51,17 +50,23 @@ public class EncapsulatedRewriter extends AbstractRewriter implements Rewriter {
 		state = nextState;
 		return step;
 	}
-	
-	protected RewriteState initialise(Automaton automaton) {
-		Rewriter rewriter = constructor.construct(automaton);		
-		RewriteProof proof = rewriter.apply();		
+		
+	public RewriteState initialise(Automaton automaton) {
+		Rewriter rewriter = constructor.construct();	
+		RewriteState state = rewriter.initialise(automaton);
+		RewriteProof proof = rewriter.apply(state);	
+		
 		if(proof.size() > 0) {
 			automaton = proof.last().automaton();
+		} else {
+			// Cannot return automaton parameter here, in case it was reduced
+			// during the Rewriter.initialise() function. 
+			automaton = state.automaton();
 		}
 		return super.initialise(automaton); 
 	}
 	
 	public static interface Constructor {
-		public Rewriter construct(Automaton automaton);
+		public Rewriter construct();
 	}
 }

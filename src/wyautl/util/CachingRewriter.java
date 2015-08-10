@@ -23,27 +23,31 @@ public class CachingRewriter implements Rewriter {
 	}
 	
 	@Override
-	public RewriteState state() {
-		return rewriter.state();
+	public RewriteState initialise(Automaton automaton) {
+		RewriteState state = cache.get(automaton);
+		if(state == null) {
+			// Now, this is a completely new state. Therefore, we put it in
+			// the cache so that we can check it in the future.
+			state = rewriter.initialise(automaton);
+			cache.put(automaton, state);
+			return state;
+		}
+		return state;
 	}
-
+	
 	@Override
-	public void reset(RewriteState state) {
-		rewriter.reset(state);
-	}
-
-	@Override
-	public RewriteStep apply(int choice) {
-		return cacheLookup(rewriter.apply(choice));
+	public RewriteStep apply(RewriteState state, int choice) {
+		return cacheLookup(rewriter.apply(state,choice));
 	}		
 	
 	@Override
-	public RewriteProof apply() {
+	public RewriteProof apply(RewriteState state) {
 		ArrayList<RewriteStep> steps = new ArrayList<RewriteStep>();
 		int r;
-		while ((r = AbstractRewriter.selectFirstUnvisited(rewriter.state())) != -1) {
-			RewriteStep step = cacheLookup(apply(r));
-			steps.add(step);
+		while ((r = state.select()) != -1) {
+			RewriteStep step = cacheLookup(apply(state,r));
+			state = step.after();
+			steps.add(step);			
 		}
 		return new RewriteProof(steps.toArray(new RewriteStep[steps.size()]));
 	}
@@ -58,11 +62,10 @@ public class CachingRewriter implements Rewriter {
 			after = cache.get(automaton);
 			if (after != null) {
 				// Yes, we have seen this state before. Hence, we return the
-				// cache state as this will identify activations previously
+				// cached state as this will identify activations previously
 				// applied.
 				step = new RewriteStep(before, step.activation(), after);
 				before.update(step.activation(), step);
-				rewriter.reset(after);
 			} else {
 				// Now, this is a completely new state. Therefore, we put it in
 				// the cache so that we can check it in the future.
