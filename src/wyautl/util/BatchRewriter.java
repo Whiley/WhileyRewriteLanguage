@@ -6,16 +6,21 @@ import wyautl.core.*;
 import wyautl.rw.*;
 
 public class BatchRewriter extends AbstractRewriter implements Rewriter {
+	private final int maxSteps;
 	
 	public BatchRewriter(Schema schema, RewriteRule... rules) {
-		super(schema,Activation.RANK_COMPARATOR,rules);
+		this(Integer.MAX_VALUE,schema,Activation.RANK_COMPARATOR,rules);
 	}
-
-	public BatchRewriter(Schema schema, Comparator<Activation> comparator,
-			RewriteRule... rules) {
-		super(schema,comparator,rules);
+	
+	public BatchRewriter(Schema schema, Comparator<Activation> comparator, RewriteRule... rules) {
+		this(Integer.MAX_VALUE,schema,comparator,rules);
 	}
-		
+	
+	public BatchRewriter(int maxSteps, Schema schema, Comparator<Activation> comparator, RewriteRule... rules) {
+		super(schema, comparator, rules);
+		this.maxSteps = maxSteps;
+	}
+	
 	/**
 	 * Apply a given activation on this state to potentially produce an updated
 	 * state.
@@ -24,15 +29,17 @@ public class BatchRewriter extends AbstractRewriter implements Rewriter {
 	 * @return
 	 */
 	@Override
-	public RewriteStep apply(RewriteState state, int index) {
+	public RewriteStep apply(RewriteState state, int index) {		
 		RewriteState before = state;
 		Automaton automaton = new Automaton(state.automaton());
 		int r;
-		while ((r = state.select()) != -1) {
+		int count = 0;
+		while (count < maxSteps && (r = state.select()) != -1) {
 			if(inplaceRewrite(state.activation(r), automaton)) {
 				// In this case, something changed so we'd better create our new
 				// state.
-				state = initialise(automaton);				
+				state = initialise(automaton);
+				count = count + 1;
 			} else {
 				// This is required to cross out any states which don't actually
 				// apply, otherwise we end up in an infinite loop reapplying
