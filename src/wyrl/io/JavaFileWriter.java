@@ -140,7 +140,7 @@ public class JavaFileWriter {
 		myOut("import wyautl.util.BigRational;");
 		myOut("import wyautl.io.*;");
 		myOut("import wyautl.core.*;");
-		myOut("import wyautl.rw.*;");
+		myOut("import wyrw.core.*;");
 		myOut("import wyrl.core.*;");
 		myOut("import wyrl.util.Runtime;");
 		myOut("import wyrl.util.Pair;");

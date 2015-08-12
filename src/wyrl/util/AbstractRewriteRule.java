@@ -26,8 +26,8 @@
 package wyrl.util;
 
 import wyautl.core.*;
-import wyautl.rw.RewriteRule;
 import wyrl.core.Pattern;
+import wyrw.core.RewriteRule;
 
 public abstract class AbstractRewriteRule implements RewriteRule {
 

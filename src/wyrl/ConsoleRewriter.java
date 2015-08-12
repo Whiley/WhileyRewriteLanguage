@@ -13,11 +13,17 @@ import java.util.ArrayList;
 import wyautl.core.*;
 import wyautl.io.PrettyAutomataReader;
 import wyautl.io.PrettyAutomataWriter;
-import wyautl.rw.*;
-import wyautl.util.BatchRewriter;
-import wyautl.util.CachingRewriter;
-import wyautl.util.EncapsulatedRewriter;
-import wyautl.util.SingleStepRewriter;
+import wyrw.core.Activation;
+import wyrw.core.InferenceRule;
+import wyrw.core.ReductionRule;
+import wyrw.core.RewriteRule;
+import wyrw.core.RewriteState;
+import wyrw.core.RewriteStep;
+import wyrw.core.Rewriter;
+import wyrw.util.BatchRewriter;
+import wyrw.util.CachingRewriter;
+import wyrw.util.EncapsulatedRewriter;
+import wyrw.util.SingleStepRewriter;
 
 /**
  * Provides a general console-based interface for a given rewrite system. The

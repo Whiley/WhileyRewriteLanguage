@@ -1,4 +1,4 @@
-package wyautl.rw;
+package wyrw.core;
 
 /**
  * Represents a single rewriting step. This may or may not correspond directly

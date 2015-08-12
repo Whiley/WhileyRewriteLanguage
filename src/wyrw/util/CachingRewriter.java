@@ -1,10 +1,13 @@
-package wyautl.util;
+package wyrw.util;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 
 import wyautl.core.Automaton;
-import wyautl.rw.*;
+import wyrw.core.RewriteProof;
+import wyrw.core.RewriteState;
+import wyrw.core.RewriteStep;
+import wyrw.core.Rewriter;
 
 public class CachingRewriter implements Rewriter {
 	/**

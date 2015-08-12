@@ -23,46 +23,53 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-package wyautl.rw;
+package wyrw.core;
 
 import wyautl.core.Automaton;
 
 /**
- * Represents the (abstract) mechanism for controlling the rewriting of a given
- * automaton under a given set of rules. Different implementation of this
- * interface are possible, and will have different performance characteristics.
+ * A rewrite rule guaranteed to reduce the Automaton (in some sense). Typically,
+ * this means it is guaranteed to reduce the number of states in the automaton
+ * by at least one (although it can often be many more). The following
+ * illustrates such a rule:
+ *
+ * <pre>
+ * reduce Not(Not(* x)):
+ *    => x
+ * </pre>
+ *
+ * This rewrite rule is guaranteed to reduce the automaton by exactly two
+ * states. As another example, consider the following:
+ *
+ * <pre>
+ * reduce And{Bool b, BExpr... xs}:
+ *    => False, if b == False
+ *    => True, if |xs| == 0
+ *    => And (xs)
+ * </pre>
+ *
+ * This rewrite rule is guaranteed to reduce the automaton by at least one or
+ * more states. However, some rewrite rules do not necessarily reduce the
+ * automaton's size. For example, consider the following rule which distributes
+ * logical <code>And</code> over logical <code>Or</code>:
+ *
+ * <pre>
+ * reduce And{Or{BExpr... xs}, BExpr... ys}:
+ *    => let ys = { And(x ++ ys) | x in xs }
+ *       in Or(ys)
+ * </pre>
+ *
+ * Observe that this rule may <i>increase</i> the overall number of states in
+ * the automaton. For example, the logical expresion <code>X && (Y || Z)</code>
+ * becomes <code>(X && Y) || (X && Z)</code>, which contains one additional
+ * state. However, observe also that this rule cannot be applied indefinitely
+ * and, for this reason, is considered to "reduce" the automaton (provided there
+ * is no other rule which can "undo" what this rule does, leading to an infinite
+ * rewrite cycle).
  *
  * @author David J. Pearce
  *
  */
-public interface Rewriter {
+public interface ReductionRule extends RewriteRule {
 
-	/**
-	 * Initialise a fresh state from a given automaton.
-	 * 
-	 * @param automaton
-	 * @return
-	 */
-	public RewriteState initialise(Automaton automaton);
-	
-	/**
-	 * Make the rewriter apply a single specified rewrite step to a given state.
-	 * This is useful for interactive or debugging modes where, for example, the
-	 * user can specify exactly which steps to take. The choice taken must be
-	 * valid for the state.
-	 *
-	 * @param state
-	 * @param choice
-	 * @return
-	 */
-	public RewriteStep apply(RewriteState state, int choice);
-	
-	/**
-	 * Apply the rewriter to a given state to rewrite as much as possible.
-	 * This produces a rewrite "proof" which identifies the steps taken during
-	 * rewriting.
-	 * 
-	 * @return
-	 */
-	public RewriteProof apply(RewriteState state);
 }

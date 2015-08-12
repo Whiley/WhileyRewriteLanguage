@@ -6,7 +6,7 @@ import java.math.BigInteger;
 import wyautl.util.BigRational;
 import wyautl.io.*;
 import wyautl.core.*;
-import wyautl.rw.*;
+import wyrw.core.*;
 import wyrl.core.*;
 import wyrl.util.Runtime;
 import wyrl.util.Pair;

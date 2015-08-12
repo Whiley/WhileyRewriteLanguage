@@ -1,10 +1,14 @@
-package wyautl.util;
+package wyrw.util;
 
 import java.util.Arrays;
 import java.util.Comparator;
 
 import wyautl.core.*;
-import wyautl.rw.*;
+import wyrw.core.Activation;
+import wyrw.core.RewriteRule;
+import wyrw.core.RewriteState;
+import wyrw.core.RewriteStep;
+import wyrw.core.Rewriter;
 
 public class RevertingBatchRewriter extends AbstractRewriter implements Rewriter {
 	

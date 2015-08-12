@@ -1,15 +1,15 @@
-package wyautl.util;
+package wyrw.util;
 
 import java.util.Comparator;
 
 import wyautl.core.Automaton;
 import wyautl.core.Schema;
-import wyautl.rw.Activation;
-import wyautl.rw.RewriteProof;
-import wyautl.rw.RewriteRule;
-import wyautl.rw.RewriteState;
-import wyautl.rw.RewriteStep;
-import wyautl.rw.Rewriter;
+import wyrw.core.Activation;
+import wyrw.core.RewriteProof;
+import wyrw.core.RewriteRule;
+import wyrw.core.RewriteState;
+import wyrw.core.RewriteStep;
+import wyrw.core.Rewriter;
 
 /**
  * Represents a rewriter which works on top of another "internal" rewriter.

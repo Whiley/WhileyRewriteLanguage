@@ -1,4 +1,4 @@
-package wyautl.rw;
+package wyrw.core;
 
 import java.util.ArrayList;
 

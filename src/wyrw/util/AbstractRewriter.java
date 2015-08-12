@@ -1,4 +1,4 @@
-package wyautl.util;
+package wyrw.util;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -6,8 +6,12 @@ import java.util.Comparator;
 
 import wyautl.core.Automaton;
 import wyautl.core.Schema;
-import wyautl.rw.Activation;
-import wyautl.rw.*;
+import wyrw.core.Activation;
+import wyrw.core.RewriteProof;
+import wyrw.core.RewriteRule;
+import wyrw.core.RewriteState;
+import wyrw.core.RewriteStep;
+import wyrw.core.Rewriter;
 
 public abstract class AbstractRewriter implements Rewriter {
 	
