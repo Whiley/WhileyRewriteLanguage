@@ -37,6 +37,16 @@ public class RewriteState {
 		return activations.length;
 	}
 	
+	public int rank() {
+		int c = 0;
+		for(int i=0;i!=activations.length;++i) {
+			if(steps[i] == null) {
+				c++;
+			}
+		}
+		return c;
+	}
+
 	public Automaton automaton() {
 		return automaton;
 	}
