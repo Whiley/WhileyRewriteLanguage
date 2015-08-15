@@ -20,10 +20,10 @@ import wyrw.core.RewriteRule;
 import wyrw.core.RewriteState;
 import wyrw.core.RewriteStep;
 import wyrw.core.Rewriter;
-import wyrw.util.BatchRewriter;
+import wyrw.util.InplaceRewriter;
 import wyrw.util.CachingRewriter;
 import wyrw.util.EncapsulatedRewriter;
-import wyrw.util.SingleStepRewriter;
+import wyrw.util.SimpleRewriter;
 
 /**
  * Provides a general console-based interface for a given rewrite system. The
@@ -236,16 +236,16 @@ public class ConsoleRewriter {
 			EncapsulatedRewriter.Constructor constructor = new EncapsulatedRewriter.Constructor() {
 				@Override
 				public Rewriter construct() {
-					return new BatchRewriter(schema,reductions);
+					return new InplaceRewriter(schema,reductions);
 				}				
 			};
 			rewriter = new EncapsulatedRewriter(constructor,automaton,schema,Activation.RANK_COMPARATOR,inferences); 
 		} else {
 			RewriteRule[] rules = append(reductions,inferences);
 			if(singleStep) {
-				rewriter = new SingleStepRewriter(schema,rules);		
+				rewriter = new SimpleRewriter(schema,rules);		
 			} else {
-				rewriter = new BatchRewriter(schema,rules);
+				rewriter = new InplaceRewriter(schema,rules);
 			}			
 		}
 		if(caching) {

@@ -7,7 +7,7 @@ import java.util.Comparator;
 import wyautl.core.Automaton;
 import wyautl.core.Schema;
 import wyrw.core.Activation;
-import wyrw.core.RewriteProof;
+import wyrw.core.Rewrite;
 import wyrw.core.RewriteRule;
 import wyrw.core.RewriteState;
 import wyrw.core.RewriteStep;
@@ -43,7 +43,7 @@ public abstract class AbstractRewriter implements Rewriter {
 	public abstract RewriteStep apply(RewriteState state, int choice);
 	
 	@Override
-	public RewriteProof apply(RewriteState state) {
+	public Rewrite apply(RewriteState state) {
 		ArrayList<RewriteStep> steps = new ArrayList<RewriteStep>();
 		int r;
 		while ((r = state.select()) != -1) {
@@ -51,7 +51,7 @@ public abstract class AbstractRewriter implements Rewriter {
 			state = step.after();
 			steps.add(step);			
 		}
-		return new RewriteProof(steps.toArray(new RewriteStep[steps.size()]));
+		return new Rewrite(steps.toArray(new RewriteStep[steps.size()]));
 	}
 	
 	/**

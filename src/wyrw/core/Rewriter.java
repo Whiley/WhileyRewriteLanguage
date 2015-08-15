@@ -36,33 +36,15 @@ import wyautl.core.Automaton;
  *
  */
 public interface Rewriter {
-
 	/**
-	 * Initialise a fresh state from a given automaton.
-	 * 
-	 * @param automaton
-	 * @return
-	 */
-	public RewriteState initialise(Automaton automaton);
-	
-	/**
-	 * Make the rewriter apply a single specified rewrite step to a given state.
-	 * This is useful for interactive or debugging modes where, for example, the
-	 * user can specify exactly which steps to take. The choice taken must be
-	 * valid for the state.
+	 * Apply a single specified activation to a given state. This can be part of
+	 * a larger, automated rewriter strategy. Or it could be used, for example,
+	 * for interactive or debugging modes where, for example, the user can
+	 * specify exactly which steps to take. 
 	 *
 	 * @param state
 	 * @param choice
 	 * @return
 	 */
-	public RewriteStep apply(RewriteState state, int choice);
-	
-	/**
-	 * Apply the rewriter to a given state to rewrite as much as possible.
-	 * This produces a rewrite "proof" which identifies the steps taken during
-	 * rewriting.
-	 * 
-	 * @return
-	 */
-	public RewriteProof apply(RewriteState state);
+	public Automaton apply(Automaton automaton, Activation activation);		
 }

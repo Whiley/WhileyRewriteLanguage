@@ -11,14 +11,14 @@ import wyrw.core.RewriteState;
 import wyrw.core.RewriteStep;
 import wyrw.core.Rewriter;
 
-public class SingleStepRewriter extends AbstractRewriter implements Rewriter {
+public class SimpleRewriter extends AbstractRewriter implements Rewriter {
 	
 	
-	public SingleStepRewriter(Schema schema, RewriteRule... rules) {
+	public SimpleRewriter(Schema schema, RewriteRule... rules) {
 		super(schema,Activation.RANK_COMPARATOR,rules);
 	}
 
-	public SingleStepRewriter(Schema schema, Comparator<Activation> comparator,
+	public SimpleRewriter(Schema schema, Comparator<Activation> comparator,
 			RewriteRule... rules) {
 		super(schema,comparator,rules);
 	}

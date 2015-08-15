@@ -9,18 +9,18 @@ import wyrw.core.RewriteState;
 import wyrw.core.RewriteStep;
 import wyrw.core.Rewriter;
 
-public class BatchRewriter extends AbstractRewriter implements Rewriter {
+public class InplaceRewriter extends AbstractRewriter implements Rewriter {
 	private final int maxSteps;
 	
-	public BatchRewriter(Schema schema, RewriteRule... rules) {
+	public InplaceRewriter(Schema schema, RewriteRule... rules) {
 		this(Integer.MAX_VALUE,schema,Activation.RANK_COMPARATOR,rules);
 	}
 	
-	public BatchRewriter(Schema schema, Comparator<Activation> comparator, RewriteRule... rules) {
+	public InplaceRewriter(Schema schema, Comparator<Activation> comparator, RewriteRule... rules) {
 		this(Integer.MAX_VALUE,schema,comparator,rules);
 	}
 	
-	public BatchRewriter(int maxSteps, Schema schema, Comparator<Activation> comparator, RewriteRule... rules) {
+	public InplaceRewriter(int maxSteps, Schema schema, Comparator<Activation> comparator, RewriteRule... rules) {
 		super(schema, comparator, rules);
 		this.maxSteps = maxSteps;
 	}
