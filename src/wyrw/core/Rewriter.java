@@ -36,15 +36,13 @@ import wyautl.core.Automaton;
  *
  */
 public interface Rewriter {
+	
+	public void initialise(Automaton automaton);
+	
 	/**
-	 * Apply a single specified activation to a given state. This can be part of
-	 * a larger, automated rewriter strategy. Or it could be used, for example,
-	 * for interactive or debugging modes where, for example, the user can
-	 * specify exactly which steps to take. 
+	 * Request that the rewriter take a number of steps (upto a given maximum).
 	 *
-	 * @param state
-	 * @param choice
 	 * @return
 	 */
-	public Automaton apply(Automaton automaton, Activation activation);		
+	public void apply(int maxSteps);		
 }
