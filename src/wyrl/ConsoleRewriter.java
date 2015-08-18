@@ -8,22 +8,16 @@ import java.io.Reader;
 import java.io.StringReader;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.util.ArrayList;
+import java.util.*;
 
 import wyautl.core.*;
 import wyautl.io.PrettyAutomataReader;
 import wyautl.io.PrettyAutomataWriter;
-import wyrw.core.Activation;
-import wyrw.core.InferenceRule;
-import wyrw.core.ReductionRule;
-import wyrw.core.RewriteRule;
-import wyrw.core.RewriteState;
-import wyrw.core.RewriteStep;
-import wyrw.core.Rewriter;
-import wyrw.util.InplaceRewriter;
-import wyrw.util.CachingRewriter;
-import wyrw.util.EncapsulatedRewriter;
-import wyrw.util.SimpleRewriter;
+import wyrw.core.*;
+import wyrw.util.AtomicRewriter;
+import wyrw.util.GraphRewrite;
+import wyrw.util.LinearRewriter;
+import wyrw.util.TreeRewrite;
 
 /**
  * Provides a general console-based interface for a given rewrite system. The
@@ -56,9 +50,14 @@ public class ConsoleRewriter {
 	private Rewriter rewriter;
 	
 	/**
-	 * Current state of rewrite
+	 * Current rewrite being worked on in this session.
 	 */
-	private RewriteState state;
+	private Rewrite rewrite;
+	
+	/**
+	 * State in rewrite where currently at in this session.
+	 */
+	private int HEAD;
 	
 	/**
 	 * List of indents being used
@@ -90,11 +89,6 @@ public class ConsoleRewriter {
 	 */
 	private boolean verbose;
 	
-	/**
-	 * Records the rewrite history in order to allow backtracking, etc.
-	 */
-	private final ArrayList<RewriteStep> history = new ArrayList<RewriteStep>();
-	
 	public ConsoleRewriter(Schema schema, InferenceRule[] inferences, ReductionRule[] reductions) {
 		this.schema = schema;
 		this.inferences = inferences;
@@ -124,10 +118,8 @@ public class ConsoleRewriter {
 			this.new Command("hiding",getMethod("setHiding",boolean.class)),
 			this.new Command("log",getMethod("printLog")),
 			this.new Command("rewrite",getMethod("startRewrite",String.class)),
-			this.new Command("load",getMethod("loadRewrite",String.class)),
-			this.new Command("reduce",getMethod("reduce")),			
-			this.new Command("reduce",getMethod("reduce",int.class)),
-			this.new Command("infer",getMethod("infer")),
+			this.new Command("load",getMethod("loadRewrite",String.class)),			
+			this.new Command("grind",getMethod("grind",int.class)),
 			this.new Command("infer",getMethod("infer",int.class)),
 			this.new Command("apply",getMethod("applyActivation",int.class)),
 			this.new Command("reset",getMethod("reset",int.class)),
@@ -150,8 +142,9 @@ public class ConsoleRewriter {
 	
 	public void print() {
 		try {
+			Rewrite.State state = rewrite.states().get(HEAD); 
 			PrettyAutomataWriter writer = new PrettyAutomataWriter(System.out,schema,indents);
-			writer.setIndices(indices);
+			writer.setIndices(indices);			
 			writer.write(state.automaton());
 			writer.flush();
 			System.out.println("\n");
@@ -166,7 +159,7 @@ public class ConsoleRewriter {
 		} catch(IOException e) { System.err.println("I/O error printing automaton"); }
 	}
 	
-	private void print(Activation activation, RewriteStep step) {
+	private void print(Activation activation, Rewrite.Step step) {
 		if(activation.rule() instanceof InferenceRule) {
 			System.out.print("* ");
 		}
@@ -175,21 +168,19 @@ public class ConsoleRewriter {
 		}
 		System.out.print(" #" + activation.root());
 		if(step != null) {
-			String afterHash = String.format("%08x",step.after().automaton().hashCode());
-			System.out.print(" (" + afterHash + ")");
+			System.out.print(" (" + step.after() + ")");
 		}
 	}
 	
 	public void printLog() {
+		List<Rewrite.Step> history = rewrite.steps();
 		for(int i = 0;i!=history.size();++i) {
 			System.out.print("[" + i + "] ");
-			RewriteStep step = history.get(i);			
-			RewriteState before = step.before();
-			Activation activation = before.activation(step.activation());
-			RewriteState after = step.after();
-			String beforeHash = String.format("%08x",before.automaton().hashCode());
-			String afterHash = String.format("%08x",after.automaton().hashCode());				
-			System.out.print(beforeHash + " => " + afterHash);			
+			Rewrite.Step step = history.get(i);			
+			int before = step.before();
+			Activation activation = step.activation();
+			int after = step.after();
+			System.out.print(before + " => " + after);			
 			System.out.println(" (" + activation.root() + ", " + activation.rule().name() + ")");
 		}
 	}		
@@ -225,32 +216,31 @@ public class ConsoleRewriter {
 	
 	public void startRewrite(Reader input) throws Exception {
 		PrettyAutomataReader reader = new PrettyAutomataReader(input, schema);
-		Automaton automaton = reader.read();		
-		rewriter = constructRewriter(automaton,schema,reductions,inferences);
+		Automaton automaton = reader.read();
+		rewrite = constructRewrite(schema,reductions,inferences);
+		rewriter = constructRewriter();
+		HEAD = rewriter.initialise(automaton);
 		print();
 	}
 	
-	private Rewriter constructRewriter(Automaton automaton, final Schema schema, final ReductionRule[] reductions, InferenceRule[] inferences) {
-		Rewriter rewriter;
-		if(hiding) {
-			EncapsulatedRewriter.Constructor constructor = new EncapsulatedRewriter.Constructor() {
-				@Override
-				public Rewriter construct() {
-					return new InplaceRewriter(schema,reductions);
-				}				
-			};
-			rewriter = new EncapsulatedRewriter(constructor,automaton,schema,Activation.RANK_COMPARATOR,inferences); 
-		} else {
-			RewriteRule[] rules = append(reductions,inferences);
-			if(singleStep) {
-				rewriter = new SimpleRewriter(schema,rules);		
-			} else {
-				rewriter = new InplaceRewriter(schema,rules);
-			}			
-		}
+	private Rewrite constructRewrite(final Schema schema, final ReductionRule[] reductions, InferenceRule[] inferences) {
+		Rewrite rewrite;
+		RewriteRule[] rules = append(reductions,inferences);
 		if(caching) {
-			rewriter = new CachingRewriter(rewriter);
-		}		
+			rewrite = new GraphRewrite(schema,Activation.RANK_COMPARATOR,rules);
+		} else {
+			rewrite = new TreeRewrite(schema,Activation.RANK_COMPARATOR,rules);
+		}
+		return rewrite;
+	}
+	
+	private Rewriter constructRewriter() {		
+		Rewriter rewriter;
+		if(singleStep) {
+			rewriter = new LinearRewriter(rewrite);		
+		} else {
+			rewriter = new AtomicRewriter(rewrite);
+		}			
 		return rewriter;
 	}
 	
@@ -262,75 +252,17 @@ public class ConsoleRewriter {
 	}
 	
 	public void applyActivation(int activation) {
-		RewriteStep step = rewriter.apply(activation);
-		history.add(step);
+		Rewrite.Step step = rewriter.apply(activation);
 		print();
 	}
 	
-	public void reduce() {
-		internalReduce();
+	public void grind(int count) {
+		rewriter.apply(count);
 		print();
-	}
-	
-	public void internalReduce() {
-		int r;
-		while((r = state.select()) != -1) {
-			RewriteStep step = rewriter.apply(state,r);
-			history.add(step);
-		}		
-	}
-	
-	public void reduce(int count) {
-		internalReduce(count);
-		print();
-	}
-	
-	public void internalReduce(int count) {
-		int r;
-		while(count >= 0 && (r = selectFirstUnvisited(ReductionRule.class)) != -1) {
-			RewriteStep step = rewriter.apply(r);
-			history.add(step);
-			count = count - 1;
-		}
-		print();
-	}
-	
-	public void infer() {
-		int r;
-		internalReduce();
-		while((r = selectFirstUnvisited(InferenceRule.class)) != -1) {
-			RewriteStep step = rewriter.apply(r);
-			history.add(step);
-			internalReduce();
-		}
-		print();
-	}
-	
-	public void infer(int count) {
-		int r;
-		internalReduce();
-		while(count >= 0 && (r = selectFirstUnvisited(InferenceRule.class)) != -1) {
-			RewriteStep step = rewriter.apply(r);
-			history.add(step);
-			internalReduce();
-			count = count - 1;
-		}		
-		print();
-	}
-	
-	public int countUnvisited() {
-		int count = 0;
-		RewriteState state = rewriter.state();
-		for(int i=0;i!=state.size();++i) {
-			if(state.step(i) == null) {
-				count++;
-			}
-		}
-		return count;
 	}
 	
 	public void reset(int id) {
-		rewriter.reset(history.get(id).before());		
+		HEAD = id;		
 	}
 	
 	// =========================================================================

@@ -25,26 +25,8 @@
 
 package wyrw.util;
 
-import wyautl.core.Automaton;
-import wyrw.core.Rewrite;
 import wyrw.core.Rewriter;
 
-public abstract class AbstractRewriter implements Rewriter {
-	
-	/**
-	 * The underlying rewrite to which this rewriter is being applied. The
-	 * general assumption is that there is at most one rewriter assigned to any
-	 * given rewrite.
-	 */
-	protected final Rewrite rewrite;
-				
-	public AbstractRewriter(Rewrite rewrite) {
-		this.rewrite = rewrite;
-	}
-	
-	@Override
-	abstract public void apply(int maxSteps);
-		
-	@Override
-	abstract public int initialise(Automaton automaton);
+public class BreadthFirstRewriter implements Rewriter {
+
 }

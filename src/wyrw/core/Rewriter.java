@@ -37,7 +37,14 @@ import wyautl.core.Automaton;
  */
 public interface Rewriter {
 	
-	public void initialise(Automaton automaton);
+	/**
+	 * Initialise the rewrite with a given automaton. This is done through the
+	 * rewriter to allow it the possibility to initialise state and/or update
+	 * the automaton in some way.
+	 * 
+	 * @param automaton
+	 */
+	public int initialise(Automaton automaton);
 	
 	/**
 	 * Request that the rewriter take a number of steps (upto a given maximum).
