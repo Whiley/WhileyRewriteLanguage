@@ -29,6 +29,8 @@ public class AtomicRewriter extends AbstractRewriter implements Rewriter {
 			int next = state.select();
 			if(next != -1 && inplaceRewrite(state.activation(next),automaton)) {
 				// An actual step occurred
+				automaton.compact();
+				automaton.minimise();				
 				current = rewrite.add(automaton);
 				count = count + 1;
 			} else {

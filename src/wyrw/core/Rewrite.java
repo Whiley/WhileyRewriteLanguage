@@ -113,16 +113,7 @@ public interface Rewrite {
 		 * @return
 		 */
 		public Activation activation(int index);
-
-		/**
-		 * Return the step for the corresponding activation. This may be null if
-		 * the activation hasn't been explored yet.
-		 * 
-		 * @param index
-		 * @return
-		 */
-		public Step step(int index);
-
+		
 		/**
 		 * Select the first unvisited state, or return -1 if none exists. This
 		 * method can be used without forcing the state to enumerate all

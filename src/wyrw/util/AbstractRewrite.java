@@ -26,6 +26,7 @@
 package wyrw.util;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
@@ -78,14 +79,15 @@ public class AbstractRewrite implements Rewrite {
 	}
 
 	@Override
-	public List<State> states() {
+	public List<Rewrite.State> states() {
 		return Collections.unmodifiableList(states);
 	}
 
 	@Override
 	public int add(Automaton automaton) {
-		// TODO Auto-generated method stub
-		return 0;
+		int index = states.size();
+		states.add(initialise(automaton));
+		return index;
 	}
 
 	@Override
@@ -94,6 +96,94 @@ public class AbstractRewrite implements Rewrite {
 		steps.add(step);
 		return index;
 	}	
+	
+	private Rewrite.State initialise(Automaton automaton) {
+		ArrayList<Activation> activations = new ArrayList<Activation>();
+		for (int s = 0; s != automaton.nStates(); ++s) {
+			Automaton.State state = automaton.get(s);
+			// Check whether this state is a term or not; that's because only
+			// terms can be roots for rewrite rule applications.
+			if (state instanceof Automaton.Term) {
+				for (int r = 0; r != rules.length; ++r) {
+					rules[r].probe(automaton, s, activations);
+				}
+			}
+		}
+		Activation[] array = activations.toArray(new Activation[activations.size()]);
+		if (comparator != null) {
+			Arrays.sort(array, comparator);
+		}
+		return new State(automaton, array);
+	}
+	
+	public class State implements Rewrite.State {
+		/**
+		 * The automaton which this state represents.
+		 */
+		private final Automaton automaton;
+
+		/**
+		 * The array of all possible activations on the given automaton.
+		 */
+		private final Activation[] activations;
+
+		/**
+		 * The array of possible steps from this automaton. Each entry matches
+		 * the corresponding entry in the activations array. Entries maybe null
+		 * to signal steps which have not yet been explored.
+		 */
+		private final Rewrite.Step[] steps;
+
+		public State(Automaton automaton, Activation... activations) {
+			this.automaton = automaton;
+			this.activations = activations;
+			this.steps = new Rewrite.Step[activations.length];
+		}
+
+		public int size() {
+			return activations.length;
+		}
+
+		public int rank() {
+			int c = 0;
+			for (int i = 0; i != activations.length; ++i) {
+				if (steps[i] == null) {
+					c++;
+				}
+			}
+			return c;
+		}
+
+		public Automaton automaton() {
+			return automaton;
+		}
+
+		public Activation activation(int index) {
+			return activations[index];
+		}
+
+		public Rewrite.Step step(int index) {
+			return steps[index];
+		}
+
+		public void update(int index, Rewrite.Step step) {
+			this.steps[index] = step;
+		}
+
+		/**
+		 * Select the first unvisited state, or return -1 if none exists.
+		 * 
+		 * @return
+		 */
+		public int select() {
+			for (int i = 0; i != steps.length; ++i) {
+				if (steps[i] == null) {
+					return i;
+				}
+			}
+			return -1;
+		}
+	}
 	
 	public static class Step implements Rewrite.Step {
 		/**

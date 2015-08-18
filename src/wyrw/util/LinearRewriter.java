@@ -71,6 +71,8 @@ public class LinearRewriter extends AbstractRewriter implements Rewriter {
 				Activation activation = state.activation(next);
 				if (activation.apply(automaton) != Automaton.K_VOID) {
 					// An actual step occurred
+					automaton.compact();
+					automaton.minimise();
 					int after = rewrite.add(automaton);
 					rewrite.add(new AbstractRewrite.Step(current, after, activation));
 					this.current = after;

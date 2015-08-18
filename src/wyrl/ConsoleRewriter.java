@@ -14,6 +14,7 @@ import wyautl.core.*;
 import wyautl.io.PrettyAutomataReader;
 import wyautl.io.PrettyAutomataWriter;
 import wyrw.core.*;
+import wyrw.util.AbstractRewrite;
 import wyrw.util.AtomicRewriter;
 import wyrw.util.GraphRewrite;
 import wyrw.util.LinearRewriter;
@@ -120,7 +121,6 @@ public class ConsoleRewriter {
 			this.new Command("rewrite",getMethod("startRewrite",String.class)),
 			this.new Command("load",getMethod("loadRewrite",String.class)),			
 			this.new Command("grind",getMethod("grind",int.class)),
-			this.new Command("infer",getMethod("infer",int.class)),
 			this.new Command("apply",getMethod("applyActivation",int.class)),
 			this.new Command("reset",getMethod("reset",int.class)),
 	};
@@ -151,11 +151,10 @@ public class ConsoleRewriter {
 			for(int i=0;i!=state.size();++i) {
 				Activation activation = state.activation(i);
 				System.out.print("[" + i + "] ");
-				print(activation,state.step(i));	
+				print(activation,null);	
 				System.out.println();
 			}
-			String currentHash = String.format("%08x",state.automaton().hashCode());
-			System.out.println("\nCurrent: " + currentHash + " (" + countUnvisited() + " / " + state.size() + " unvisited, " + System.identityHashCode(state) + "," + state.automaton().nStates() + ")");
+			System.out.println("\nCurrent: " + HEAD + " (" + state.rank() + " / " + state.size() + " unvisited)");
 		} catch(IOException e) { System.err.println("I/O error printing automaton"); }
 	}
 	
@@ -251,8 +250,19 @@ public class ConsoleRewriter {
 		return rules;
 	}
 	
-	public void applyActivation(int activation) {
-		Rewrite.Step step = rewriter.apply(activation);
+	public void applyActivation(int index) {
+		// Yes, there is at least one activation left to try
+		Rewrite.State state = rewrite.states().get(HEAD);
+		Automaton automaton = new Automaton(state.automaton());
+		Activation activation = state.activation(index);
+		if (activation.apply(automaton) != Automaton.K_VOID) {
+			// An actual step occurred
+			automaton.compact();
+			automaton.minimise();
+			int after = rewrite.add(automaton);
+			rewrite.add(new AbstractRewrite.Step(HEAD, after, activation));
+			HEAD = after;
+		}
 		print();
 	}
 	
