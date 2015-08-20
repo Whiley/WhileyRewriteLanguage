@@ -26,6 +26,7 @@
 package wyrw.util;
 
 import wyautl.core.Automaton;
+import wyrw.core.Activation;
 import wyrw.core.Rewrite;
 import wyrw.core.Rewriter;
 
@@ -47,4 +48,47 @@ public abstract class AbstractRewriter implements Rewriter {
 		
 	@Override
 	abstract public int initialise(Automaton automaton);
+	
+	protected void invalidate(int state, int activation) {
+		rewrite.add(new AbstractRewrite.Step(state, state, activation));
+	}
+	
+	/**
+	 * Record that a particular step has been taken in the rewrite.
+	 * 
+	 * @param state
+	 *            State before rewrite occurred
+	 * @param automaton
+	 *            Automaton after rewrite occurred
+	 * @param activation
+	 *            Activation index which caused rewrite
+	 * @return
+	 */
+	protected int step(int state, Automaton automaton, int activation) {
+		int after = rewrite.add(automaton);
+		rewrite.add(new AbstractRewrite.Step(state, after, activation));
+		return after;
+	}
+	
+	/**
+	 * Apply an activation to the automaton in place. That is, the current
+	 * automaton is itself updated.
+	 * 
+	 * @param index
+	 * @param automaton
+	 * @return
+	 */
+	protected boolean rewrite(Automaton automaton,Activation activation) {
+		int from = activation.root();
+		int target = activation.apply(automaton);
+
+		if (target != Automaton.K_VOID && from != target) {
+			automaton.compact();			
+			automaton.minimise();
+			return true;
+		} else {
+			// activation did not apply
+			return false;
+		}
+	}
 }

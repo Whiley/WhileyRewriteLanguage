@@ -25,8 +25,84 @@
 
 package wyrw.util;
 
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+
+import wyautl.core.Automaton;
+import wyrw.core.Rewrite;
 import wyrw.core.Rewriter;
 
-public class BreadthFirstRewriter implements Rewriter {
+public class BreadthFirstRewriter extends AbstractRewriter implements Rewriter {
+	private final HashSet<Integer> visited = new HashSet<Integer>();
+	private ArrayList<Integer> frontier = new ArrayList<Integer>();
+	private int index;
+	
+	public BreadthFirstRewriter(Rewrite rewrite) {
+		super(rewrite);
+	}
 
+	@Override
+	public void apply(int count) {
+		while(count > 0 && step()) {
+			count = count - 1;
+		}
+	}
+
+	@Override
+	public int initialise(Automaton automaton) {
+		int state = rewrite.add(automaton);		
+		frontier.add(state);
+		visited.add(state);
+		index = 0;
+		return state;
+	}	
+	
+	private boolean step() {
+		List<Rewrite.State> states = rewrite.states();
+		while (frontier.size() > 0) {
+			while (index < frontier.size()) {
+				int before = frontier.get(index);
+				Rewrite.State state = states.get(before);
+				int activation = state.select();
+				if (activation != -1) {
+					Automaton automaton = new Automaton(state.automaton());
+					if (rewrite(automaton, state.activation(activation))) {
+						step(before, automaton, activation);
+						return true;
+					} else {
+						invalidate(before, activation);
+					}					
+				} else {
+					index = index + 1;
+				}
+			}
+			extendFrontier();	
+		}
+		
+		return false;
+	}
+	
+	/**
+	 * Got through out current frontier and extend every state by one step to
+	 * produce a new frontier. Any steps previously visited are ignored.
+	 */
+	private void extendFrontier() {
+		ArrayList<Integer> nFrontier = new ArrayList<Integer>();
+		List<Rewrite.State> states = rewrite.states();
+		for (int i = 0; i != frontier.size(); ++i) {
+			Rewrite.State state = states.get(i);
+			for (int j = 0; j != state.size(); ++j) {
+				Rewrite.Step step = state.step(j);
+				int next = step.after();
+				if (!visited.contains(next)) {
+					visited.add(next);
+					nFrontier.add(next);
+				}
+			}
+
+		}		
+		frontier = nFrontier;
+		index = 0;
+	}
 }

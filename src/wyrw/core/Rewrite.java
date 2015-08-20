@@ -71,7 +71,7 @@ public interface Rewrite {
 		 * 
 		 * @return
 		 */
-		public Activation activation();
+		public int activation();
 	}
 
 	/**
@@ -113,6 +113,14 @@ public interface Rewrite {
 		 * @return
 		 */
 		public Activation activation(int index);
+		
+		/**
+		 * Return the rewrite step associated with this activation
+		 * 
+		 * @param index
+		 * @return
+		 */
+		public Rewrite.Step step(int index);
 		
 		/**
 		 * Select the first unvisited state, or return -1 if none exists. This

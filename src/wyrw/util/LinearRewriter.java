@@ -69,14 +69,13 @@ public class LinearRewriter extends AbstractRewriter implements Rewriter {
 				// Yes, there is at least one activation left to try
 				Automaton automaton = new Automaton(state.automaton());
 				Activation activation = state.activation(next);
-				if (activation.apply(automaton) != Automaton.K_VOID) {
+				if(rewrite(automaton,activation)) {
 					// An actual step occurred
-					automaton.compact();
-					automaton.minimise();
-					int after = rewrite.add(automaton);
-					rewrite.add(new AbstractRewrite.Step(current, after, activation));
-					this.current = after;
+					current = step(current, automaton, next);
 					count = count + 1;
+				} else {
+					// loop back
+					invalidate(current, next);
 				}
 			} else {
 				// There are no activations left to try so we are done.
@@ -89,5 +88,6 @@ public class LinearRewriter extends AbstractRewriter implements Rewriter {
 	public int initialise(Automaton automaton) {
 		current = rewrite.add(automaton);
 		return current;
-	}	
+	}		
+	
 }

@@ -15,9 +15,10 @@ import wyautl.io.PrettyAutomataReader;
 import wyautl.io.PrettyAutomataWriter;
 import wyrw.core.*;
 import wyrw.util.AbstractRewrite;
-import wyrw.util.AtomicRewriter;
+import wyrw.util.BreadthFirstRewriter;
 import wyrw.util.GraphRewrite;
 import wyrw.util.LinearRewriter;
+import wyrw.util.StackedRewrite;
 import wyrw.util.TreeRewrite;
 
 /**
@@ -76,14 +77,14 @@ public class ConsoleRewriter {
 	private boolean caching = true;
 	
 	/**
-	 * Single step rewriting
+	 * Collapse reductions or not
 	 */
-	private boolean singleStep = true;
+	private boolean collapse = false;
 	
 	/**
-	 * Hide reduction rewrites
+	 * Linear rewriter
 	 */
-	private boolean hiding = false;	
+	private boolean linear = true;
 	
 	/**
 	 * If true, generate verbose information about rewriting.
@@ -115,8 +116,8 @@ public class ConsoleRewriter {
 			this.new Command("indent",getMethod("setIndent",String[].class)),
 			this.new Command("indices",getMethod("setIndices",boolean.class)),
 			this.new Command("caching",getMethod("setCaching",boolean.class)),
-			this.new Command("batch",getMethod("setBatch",boolean.class)),
-			this.new Command("hiding",getMethod("setHiding",boolean.class)),
+			this.new Command("collapse",getMethod("setCollapse",boolean.class)),
+			this.new Command("linear",getMethod("setLinear",boolean.class)),
 			this.new Command("log",getMethod("printLog")),
 			this.new Command("rewrite",getMethod("startRewrite",String.class)),
 			this.new Command("load",getMethod("loadRewrite",String.class)),			
@@ -130,7 +131,7 @@ public class ConsoleRewriter {
 	}
 
 	public void printHelp() {
-		System.out.println("Model rail commands:");
+		System.out.println("Commands:");
 		for(Command c : commands) {
 			System.out.println("\t" + c.keyword);
 		}
@@ -151,7 +152,7 @@ public class ConsoleRewriter {
 			for(int i=0;i!=state.size();++i) {
 				Activation activation = state.activation(i);
 				System.out.print("[" + i + "] ");
-				print(activation,null);	
+				print(activation,state.step(i));	
 				System.out.println();
 			}
 			System.out.println("\nCurrent: " + HEAD + " (" + state.rank() + " / " + state.size() + " unvisited)");
@@ -177,7 +178,7 @@ public class ConsoleRewriter {
 			System.out.print("[" + i + "] ");
 			Rewrite.Step step = history.get(i);			
 			int before = step.before();
-			Activation activation = step.activation();
+			Activation activation = rewrite.states().get(before).activation(step.activation());
 			int after = step.after();
 			System.out.print(before + " => " + after);			
 			System.out.println(" (" + activation.root() + ", " + activation.rule().name() + ")");
@@ -196,12 +197,12 @@ public class ConsoleRewriter {
 		this.caching = flag;
 	}
 	
-	public void setBatch(boolean flag) {
-		this.singleStep = !flag;
+	public void setCollapse(boolean flag) {
+		this.collapse = flag;
 	}
 	
-	public void setHiding(boolean flag) {
-		this.hiding = flag;
+	public void setLinear(boolean flag) {
+		this.linear = flag;
 	}
 	
 	public void loadRewrite(String input) throws Exception {
@@ -224,23 +225,24 @@ public class ConsoleRewriter {
 	
 	private Rewrite constructRewrite(final Schema schema, final ReductionRule[] reductions, InferenceRule[] inferences) {
 		Rewrite rewrite;
-		RewriteRule[] rules = append(reductions,inferences);
+		RewriteRule[] rules = collapse ? inferences : append(reductions,inferences);
 		if(caching) {
 			rewrite = new GraphRewrite(schema,Activation.RANK_COMPARATOR,rules);
 		} else {
 			rewrite = new TreeRewrite(schema,Activation.RANK_COMPARATOR,rules);
 		}
+		if(collapse) {
+			rewrite = new StackedRewrite(rewrite,schema,reductions);
+		}
 		return rewrite;
 	}
 	
-	private Rewriter constructRewriter() {		
-		Rewriter rewriter;
-		if(singleStep) {
-			rewriter = new LinearRewriter(rewrite);		
+	private Rewriter constructRewriter() {
+		if(linear) {
+			return new LinearRewriter(rewrite);
 		} else {
-			rewriter = new AtomicRewriter(rewrite);
-		}			
-		return rewriter;
+			return new BreadthFirstRewriter(rewrite);
+		}
 	}
 	
 	private RewriteRule[] append(RewriteRule[] lhs, RewriteRule[] rhs) {
@@ -260,7 +262,7 @@ public class ConsoleRewriter {
 			automaton.compact();
 			automaton.minimise();
 			int after = rewrite.add(automaton);
-			rewrite.add(new AbstractRewrite.Step(HEAD, after, activation));
+			rewrite.add(new AbstractRewrite.Step(HEAD, after, index));
 			HEAD = after;
 		}
 		print();
@@ -351,7 +353,7 @@ public class ConsoleRewriter {
 				} catch (IllegalArgumentException e) {
 					e.printStackTrace();
 				} catch (InvocationTargetException e) {
-					throw (RuntimeException) e.getCause();
+					throw (Error) e.getCause();
 				}
 			}
 		}

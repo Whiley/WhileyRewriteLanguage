@@ -52,7 +52,7 @@ public class AbstractRewrite implements Rewrite {
 	/**
 	 * The list of states in the rewrite.
 	 */
-	protected final ArrayList<Rewrite.State> states = new ArrayList<Rewrite.State>();
+	protected final ArrayList<State> states = new ArrayList<State>();
 	
 	/**
 	 * The list of rewrite steps which have been taken so far. Each step refers
@@ -80,7 +80,8 @@ public class AbstractRewrite implements Rewrite {
 
 	@Override
 	public List<Rewrite.State> states() {
-		return Collections.unmodifiableList(states);
+		// Following is safe because list is unmodifiable
+		return (List) Collections.unmodifiableList(states);
 	}
 
 	@Override
@@ -94,10 +95,12 @@ public class AbstractRewrite implements Rewrite {
 	public int add(Rewrite.Step step) {
 		int index = steps.size();
 		steps.add(step);
+		State state = states.get(step.before());
+		state.update(step.activation(),step);
 		return index;
 	}	
 	
-	private Rewrite.State initialise(Automaton automaton) {
+	private State initialise(Automaton automaton) {
 		ArrayList<Activation> activations = new ArrayList<Activation>();
 		for (int s = 0; s != automaton.nStates(); ++s) {
 			Automaton.State state = automaton.get(s);
@@ -166,7 +169,7 @@ public class AbstractRewrite implements Rewrite {
 			return steps[index];
 		}
 
-		public void update(int index, Rewrite.Step step) {
+		private void update(int index, Rewrite.Step step) {
 			this.steps[index] = step;
 		}
 
@@ -199,9 +202,9 @@ public class AbstractRewrite implements Rewrite {
 		/**
 		 * Activation which took us from before state to after state.
 		 */
-		protected final Activation activation;
+		protected final int activation;
 		
-		public Step(int before, int after, Activation activation) {
+		public Step(int before, int after, int activation) {
 			this.before = before;
 			this.after = after;
 			this.activation = activation;
@@ -218,7 +221,7 @@ public class AbstractRewrite implements Rewrite {
 		}
 
 		@Override
-		public Activation activation() {
+		public int activation() {
 			return activation;
 		}
 		
