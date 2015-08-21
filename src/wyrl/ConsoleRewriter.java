@@ -17,7 +17,7 @@ import wyrw.core.*;
 import wyrw.util.AbstractRewrite;
 import wyrw.util.BreadthFirstRewriter;
 import wyrw.util.GraphRewrite;
-import wyrw.util.LinearRewriter;
+import wyrw.util.UnfairLinearRewriter;
 import wyrw.util.StackedRewrite;
 import wyrw.util.TreeRewrite;
 
@@ -239,7 +239,7 @@ public class ConsoleRewriter {
 	
 	private Rewriter constructRewriter() {
 		if(linear) {
-			return new LinearRewriter(rewrite);
+			return new UnfairLinearRewriter(rewrite);
 		} else {
 			return new BreadthFirstRewriter(rewrite);
 		}
@@ -264,6 +264,9 @@ public class ConsoleRewriter {
 			int after = rewrite.add(automaton);
 			rewrite.add(new AbstractRewrite.Step(HEAD, after, index));
 			HEAD = after;
+		} else {
+			// invalidate this step
+			rewrite.add(new AbstractRewrite.Step(HEAD, HEAD, index));
 		}
 		print();
 	}

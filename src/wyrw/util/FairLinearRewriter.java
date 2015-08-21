@@ -41,6 +41,11 @@ import wyrw.core.Rewriter;
  * produces rewrites which form a single line (i.e. they are linear).
  * </p>
  * <p>
+ * This rewriter is <i>fair</i> in that it makes an effort to ensure rules are
+ * given equal opportunity to fire. Intuitively, this is to ensure rules are not
+ * "starved" as this can prevent certain rewrites of interest from happening.
+ * </p>
+ * <p>
  * This rewriter is not particularly efficient as it creates a new state on
  * every rewrite. But, this does mean all intermediate states can be inspected.
  * </p>
@@ -48,13 +53,19 @@ import wyrw.core.Rewriter;
  * @author David J. Pearce
  *
  */
-public class LinearRewriter extends AbstractRewriter implements Rewriter {
+public class FairLinearRewriter extends AbstractRewriter implements Rewriter {
 	/**
 	 * The current state being rewritten by this rewriter.
 	 */
 	protected int current;
 	
-	public LinearRewriter(Rewrite rewrite) {
+	/**
+	 * Provides the activation index into the current state which we're
+	 * considering.
+	 */
+	protected int index;
+	
+	public FairLinearRewriter(Rewrite rewrite) {
 		super(rewrite);
 	}
 
@@ -64,7 +75,7 @@ public class LinearRewriter extends AbstractRewriter implements Rewriter {
 		List<Rewrite.State> states = rewrite.states();
 		while (count < maxSteps) {
 			Rewrite.State state = states.get(current);
-			int next = state.select();
+			int next = select(state);
 			if (next != -1) {
 				// Yes, there is at least one activation left to try
 				Automaton automaton = new Automaton(state.automaton());
@@ -89,5 +100,20 @@ public class LinearRewriter extends AbstractRewriter implements Rewriter {
 		current = rewrite.add(automaton);
 		return current;
 	}		
+	
+	private int select(Rewrite.State state) {
+		if(state.rank() == 0) {
+			return -1;
+		} else {
+			// Following loop guaranteed to terminate because rank is non-zero.
+			while (true) {
+				index = (index + 1) % state.size();
+				if (state.step(index) == null) {
+					return index;
+				}				
+			}
+			
+		}
+	}
 	
 }

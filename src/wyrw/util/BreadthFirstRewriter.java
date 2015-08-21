@@ -60,7 +60,7 @@ public class BreadthFirstRewriter extends AbstractRewriter implements Rewriter {
 	
 	private boolean step() {
 		List<Rewrite.State> states = rewrite.states();
-		while (frontier.size() > 0) {
+		while (frontier.size() > 0) {			
 			while (index < frontier.size()) {
 				int before = frontier.get(index);
 				Rewrite.State state = states.get(before);
@@ -89,9 +89,9 @@ public class BreadthFirstRewriter extends AbstractRewriter implements Rewriter {
 	 */
 	private void extendFrontier() {
 		ArrayList<Integer> nFrontier = new ArrayList<Integer>();
-		List<Rewrite.State> states = rewrite.states();
-		for (int i = 0; i != frontier.size(); ++i) {
-			Rewrite.State state = states.get(i);
+		List<Rewrite.State> states = rewrite.states();		
+		for (int i = 0; i != frontier.size(); ++i) {			
+			Rewrite.State state = states.get(frontier.get(i));
 			for (int j = 0; j != state.size(); ++j) {
 				Rewrite.Step step = state.step(j);
 				int next = step.after();
