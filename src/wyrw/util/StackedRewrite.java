@@ -74,15 +74,18 @@ public class StackedRewrite implements Rewrite {
 	}	
 	
 	private boolean inplaceRewrite(Automaton automaton, Activation[] activations) {
+		int size = automaton.nStates();
 		for (int i = 0; i != activations.length; ++i) {
 			Activation activation = activations[i];
 			int from = activation.root();
 			int target = activation.apply(automaton);
 			if (target != Automaton.K_VOID && from != target) {
 				// Rewrite applied
-				automaton.compact();
 				automaton.minimise();
+				automaton.compact();
 				return true;
+			} else {
+				automaton.resize(size);
 			}
 		}
 		return false;

@@ -79,15 +79,17 @@ public abstract class AbstractRewriter implements Rewriter {
 	 * @return
 	 */
 	protected boolean rewrite(Automaton automaton,Activation activation) {
+		int size = automaton.nStates();
 		int from = activation.root();
 		int target = activation.apply(automaton);
 
 		if (target != Automaton.K_VOID && from != target) {
-			automaton.compact();			
 			automaton.minimise();
+			automaton.compact();
 			return true;
 		} else {
 			// activation did not apply
+			automaton.resize(size);
 			return false;
 		}
 	}

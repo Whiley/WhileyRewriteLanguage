@@ -77,7 +77,8 @@ public class BreadthFirstRewriter extends AbstractRewriter implements Rewriter {
 					index = index + 1;
 				}
 			}
-			extendFrontier();	
+			extendFrontier();
+			index = 0;
 		}
 		
 		return false;
@@ -102,7 +103,6 @@ public class BreadthFirstRewriter extends AbstractRewriter implements Rewriter {
 			}
 
 		}		
-		frontier = nFrontier;
-		index = 0;
+		frontier = nFrontier;	
 	}
 }
