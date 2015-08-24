@@ -28,6 +28,7 @@ package wyautl.core;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.BitSet;
+import java.util.Comparator;
 
 import wyautl.core.Automaton.State;
 import wyautl.util.BinaryMatrix;
@@ -1125,6 +1126,77 @@ public class Automata {
 				automaton.setRoot(i, mapping[root]);
 			}
 		}
+	}
+	
+	private static class StateComparator implements Comparator<Integer> {
+		private final Automaton automaton;
+		
+		public StateComparator(Automaton automaton) {
+			this.automaton = automaton;
+		}
+
+		@Override
+		public int compare(Integer o1, Integer o2) {
+			return compare(automaton.get(o1),automaton.get(o2));
+		}
+		
+		public int compare(Automaton.State s1, Automaton.State s2) {
+			if(s1.kind < s2.kind) {
+				return -1;
+			} else if(s1.kind > s2.kind) {
+				return 1;
+			} else if(s1 instanceof Automaton.Constant) {
+				Automaton.Constant c1 = (Automaton.Constant) s1;
+				Automaton.Constant c2 = (Automaton.Constant) s2;
+				Comparable cmp1 = (Comparable) c1.value;
+				Comparable cmp2 = (Comparable) c2.value;
+				return cmp1.compareTo(cmp2);
+			} else if(s1 instanceof Automaton.Term) {
+				Automaton.Term t1 = (Automaton.Term) s1;
+				Automaton.Term t2 = (Automaton.Term) s2;
+				if(t1.contents == t2.contents) {
+					return 0;
+				} else if(t1.contents == Automaton.K_VOID) {
+					return -1;
+				} else if(t2.contents == Automaton.K_VOID) {
+					return 1;
+				} else {
+					return 0;
+				}
+			} else if(s1 instanceof Automaton.Collection) {
+				Automaton.Collection t1 = (Automaton.Collection) s1;
+				Automaton.Collection t2 = (Automaton.Collection) s2;
+				if(t1.size() < t2.size()) {
+					return -1;
+				} else if(t1.size() > t2.size()) {
+					return 1;
+				} else {
+					return 0;
+				}
+			} else {
+				throw new RuntimeException("unknown automaton state encountered");
+			}
+		}	
+	}
+	
+	/**
+	 * Stratify the automaton by state and by other factors. The purpose of this
+	 * is to try and reduce the potential for isomorphic automaton.
+	 * 
+	 * @param automaton
+	 */
+	public static void stratify(Automaton automaton) {
+		Integer[] ordering = new Integer[automaton.nStates()];
+		for(int i=0;i!=ordering.length;++i) {
+			ordering[i] = i;
+		}
+		StateComparator comparator = new StateComparator(automaton);
+		Arrays.sort(ordering,comparator);
+		int[] binding = new int[automaton.nStates()];	
+		for(int i=0;i!=binding.length;++i) {
+			binding[ordering[i]] = i;
+		}		
+		reorder(automaton,binding);
 	}
 
 	/**

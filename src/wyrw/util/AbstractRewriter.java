@@ -25,6 +25,7 @@
 
 package wyrw.util;
 
+import wyautl.core.Automata;
 import wyautl.core.Automaton;
 import wyrw.core.Activation;
 import wyrw.core.Rewrite;
@@ -86,6 +87,7 @@ public abstract class AbstractRewriter implements Rewriter {
 		if (target != Automaton.K_VOID && from != target) {
 			automaton.minimise();
 			automaton.compact();
+			//Automata.stratify(automaton);
 			return true;
 		} else {
 			// activation did not apply

@@ -2,6 +2,7 @@ package wyrw.util;
 
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.Map;
 
 import wyautl.core.Automaton;
 import wyautl.core.Schema;
