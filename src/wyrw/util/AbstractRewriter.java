@@ -25,7 +25,6 @@
 
 package wyrw.util;
 
-import wyautl.core.Automata;
 import wyautl.core.Automaton;
 import wyrw.core.Activation;
 import wyrw.core.Rewrite;
@@ -39,9 +38,16 @@ public abstract class AbstractRewriter implements Rewriter {
 	 * given rewrite.
 	 */
 	protected final Rewrite rewrite;
+	
+	/**
+	 * The normaliser provides a generic hook for different approaches to
+	 * normalising an automaton after a successful rule application.
+	 */
+	protected final Normaliser normaliser;
 				
-	public AbstractRewriter(Rewrite rewrite) {
+	public AbstractRewriter(Rewrite rewrite, Normaliser normaliser) {
 		this.rewrite = rewrite;
+		this.normaliser = normaliser;
 	}
 	
 	@Override
@@ -85,9 +91,7 @@ public abstract class AbstractRewriter implements Rewriter {
 		int target = activation.apply(automaton);
 
 		if (target != Automaton.K_VOID && from != target) {
-			automaton.minimise();
-			automaton.compact();
-			//Automata.stratify(automaton);
+			normaliser.apply(automaton);
 			return true;
 		} else {
 			// activation did not apply

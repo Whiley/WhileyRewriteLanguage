@@ -67,12 +67,13 @@ public class LinearRewriter extends AbstractRewriter implements Rewriter {
 	 */
 	protected int index;
 
-	public LinearRewriter(Rewrite rewrite) {
-		this(rewrite,new UnfairHeuristic());
+	public LinearRewriter(Rewrite rewrite, Rewriter.Normaliser normaliser) {
+		this(rewrite,normaliser,UNFAIR_HEURISTIC);
 	}
 	
-	public LinearRewriter(Rewrite rewrite, Heuristic heuristic) {
-		super(rewrite);
+	public LinearRewriter(Rewrite rewrite, Normaliser normaliser, Heuristic heuristic) {
+		super(rewrite,normaliser);
+		this.heuristic = heuristic;
 	}
 
 	@Override
@@ -127,12 +128,10 @@ public class LinearRewriter extends AbstractRewriter implements Rewriter {
 	 * @author David J. Pearce
 	 *
 	 */
-	public static class UnfairHeuristic implements Heuristic {
-
+	public static final Heuristic UNFAIR_HEURISTIC = new Heuristic() {
 		@Override
 		public int select(State state) {
 			return state.select();
 		}
-
-	}
+	};
 }

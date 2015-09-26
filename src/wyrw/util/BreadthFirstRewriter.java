@@ -38,8 +38,8 @@ public class BreadthFirstRewriter extends AbstractRewriter implements Rewriter {
 	private ArrayList<Integer> frontier = new ArrayList<Integer>();
 	private int index;
 	
-	public BreadthFirstRewriter(Rewrite rewrite) {
-		super(rewrite);
+	public BreadthFirstRewriter(Rewrite rewrite, Rewriter.Normaliser normaliser) {
+		super(rewrite, normaliser);
 	}
 
 	@Override

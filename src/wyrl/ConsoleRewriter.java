@@ -14,12 +14,7 @@ import wyautl.core.*;
 import wyautl.io.PrettyAutomataReader;
 import wyautl.io.PrettyAutomataWriter;
 import wyrw.core.*;
-import wyrw.util.AbstractRewrite;
-import wyrw.util.BreadthFirstRewriter;
-import wyrw.util.GraphRewrite;
-import wyrw.util.UnfairLinearRewriter;
-import wyrw.util.StackedRewrite;
-import wyrw.util.TreeRewrite;
+import wyrw.util.*;
 
 /**
  * Provides a general console-based interface for a given rewrite system. The
@@ -218,30 +213,32 @@ public class ConsoleRewriter {
 		PrettyAutomataReader reader = new PrettyAutomataReader(input, schema);
 		Automaton automaton = reader.read();
 		rewrite = constructRewrite(schema,reductions,inferences);
-		rewriter = constructRewriter();
+		rewriter = constructRewriter(schema);
 		HEAD = rewriter.initialise(automaton);
 		print();
 	}
 	
-	private Rewrite constructRewrite(final Schema schema, final ReductionRule[] reductions, InferenceRule[] inferences) {
+	private Rewrite constructRewrite(final Schema schema, final ReductionRule[] reductions,
+			InferenceRule[] inferences) {
 		Rewrite rewrite;
-		RewriteRule[] rules = collapse ? inferences : append(reductions,inferences);
-		if(caching) {
-			rewrite = new GraphRewrite(schema,Activation.RANK_COMPARATOR,rules);
+		RewriteRule[] rules = collapse ? inferences : append(reductions, inferences);
+		if (caching) {
+			rewrite = new GraphRewrite(schema, Activation.RANK_COMPARATOR, rules);
 		} else {
-			rewrite = new TreeRewrite(schema,Activation.RANK_COMPARATOR,rules);
-		}
-		if(collapse) {
-			rewrite = new StackedRewrite(rewrite,schema,reductions);
+			rewrite = new TreeRewrite(schema, Activation.RANK_COMPARATOR, rules);
 		}
 		return rewrite;
 	}
 	
-	private Rewriter constructRewriter() {
+	private Rewriter constructRewriter(final Schema schema) {
+		Rewriter.Normaliser normaliser = Rewriter.SIMPLE_NORMALISER;
+		if(collapse) {
+			normaliser = new RewritingNormaliser(schema,normaliser,reductions);
+		}
 		if(linear) {
-			return new UnfairLinearRewriter(rewrite);
+			return new LinearRewriter(rewrite,normaliser);
 		} else {
-			return new BreadthFirstRewriter(rewrite);
+			return new BreadthFirstRewriter(rewrite,normaliser);
 		}
 	}
 	

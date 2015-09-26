@@ -3,15 +3,22 @@ package wyrw.util;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
-import java.util.List;
 
 import wyautl.core.Automaton;
 import wyautl.core.Schema;
 import wyrw.core.Activation;
-import wyrw.core.Rewrite;
 import wyrw.core.RewriteRule;
+import wyrw.core.Rewriter;
+import wyrw.core.Rewriter.Normaliser;
 
-public class StackedRewrite implements Rewrite {
+/**
+ * Responsible for normalising an automaton using a predefined set of
+ * <code>RewriteRule</code>.
+ * 
+ * @author David J. Pearce
+ *
+ */
+public class RewritingNormaliser implements AbstractRewriter.Normaliser {
 	/**
 	 * The schema used by automata being reduced. This is primarily useful for
 	 * debugging purposes.
@@ -24,53 +31,34 @@ public class StackedRewrite implements Rewrite {
 	protected final RewriteRule[] rules;
 	
 	/**
+	 * The normaliser provides a generic hook for different approaches to
+	 * normalising an automaton after a successful rule application.
+	 */
+	protected final Rewriter.Normaliser normaliser;
+	
+	/**
 	 * Used to sort activations generated for a given state. This allows for
 	 * some heuristics which reduce the amount of rewriting required.
 	 */
 	protected final Comparator<Activation> comparator;
 	
-	/**
-	 * The top-level rewrite
-	 */
-	private final Rewrite rewrite;
-	
-	public StackedRewrite(Rewrite rewrite, Schema schema, RewriteRule... rules) {
-		this(rewrite,schema,Activation.RANK_COMPARATOR,rules);
+	public RewritingNormaliser(Schema schema, Rewriter.Normaliser normaliser, RewriteRule... rules) {
+		this(schema,normaliser, Activation.RANK_COMPARATOR,rules);
 	}
 	
-	public StackedRewrite(Rewrite rewrite, Schema schema, Comparator<Activation> comparator, RewriteRule... rules) {
-		this.rewrite = rewrite;
+	public RewritingNormaliser(Schema schema, Rewriter.Normaliser normaliser, Comparator<Activation> comparator, RewriteRule... rules) {
 		this.schema = schema;
+		this.normaliser = normaliser;
 		this.comparator = comparator;
 		this.rules = rules;
 	}
 
 	@Override
-	public int add(Automaton automaton) {		
-		return rewrite.add(rewrite(automaton));
-	}
-
-	@Override
-	public int add(Step step) {
-		return rewrite.add(step);
-	}
-
-	@Override
-	public List<Step> steps() {
-		return rewrite.steps();
-	}
-
-	@Override
-	public List<State> states() {
-		return rewrite.states();
-	}
-	
-	private Automaton rewrite(Automaton automaton) {
+	public void apply(Automaton automaton) {
 		automaton = new Automaton(automaton);
 		while(inplaceRewrite(automaton,initialise(automaton))) {
-			// what to do here?
+			// do nout
 		}
-		return automaton;
 	}	
 	
 	private boolean inplaceRewrite(Automaton automaton, Activation[] activations) {
@@ -81,8 +69,7 @@ public class StackedRewrite implements Rewrite {
 			int target = activation.apply(automaton);
 			if (target != Automaton.K_VOID && from != target) {
 				// Rewrite applied
-				automaton.minimise();
-				automaton.compact();
+				normaliser.apply(automaton);
 				return true;
 			} else {
 				automaton.resize(size);
