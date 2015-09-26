@@ -28,7 +28,6 @@ package wyrw.util;
 import java.util.*;
 
 import wyautl.core.*;
-import wyrw.core.Activation;
 import wyrw.core.Rewrite;
 import wyrw.core.Rewrite.State;
 import wyrw.core.RewriteRule;
@@ -49,7 +48,12 @@ import wyrw.core.Rewriter;
  * @author David J. Pearce
  *
  */
-public class LinearRewriter extends AbstractRewriter implements Rewriter {
+public class LinearRewriter implements Rewriter {
+	/**
+	 * The rewrite onto which this rewriter is being applied.
+	 */
+	protected Rewrite rewrite;
+	
 	/**
 	 * The current state being rewritten by this rewriter.
 	 */
@@ -67,15 +71,16 @@ public class LinearRewriter extends AbstractRewriter implements Rewriter {
 	 */
 	protected int index;
 
-	public LinearRewriter(Rewrite rewrite, Rewriter.Normaliser normaliser) {
-		this(rewrite,normaliser,UNFAIR_HEURISTIC);
-	}
-	
-	public LinearRewriter(Rewrite rewrite, Normaliser normaliser, Heuristic heuristic) {
-		super(rewrite,normaliser);
+	public LinearRewriter(Rewrite rewrite, Heuristic heuristic) {
+		this.rewrite = rewrite;
 		this.heuristic = heuristic;
 	}
 
+	@Override
+	public void reset(int state) {
+		HEAD = state;
+	}
+	
 	@Override
 	public void apply(int maxSteps) {
 		int count = 0;
@@ -85,27 +90,12 @@ public class LinearRewriter extends AbstractRewriter implements Rewriter {
 			int next = heuristic.select(state);
 			if (next != -1) {
 				// Yes, there is at least one activation left to try
-				Automaton automaton = new Automaton(state.automaton());
-				Activation activation = state.activation(next);
-				if (rewrite(automaton, activation)) {
-					// An actual step occurred
-					HEAD = step(HEAD, automaton, next);
-					count = count + 1;
-				} else {
-					// loop back
-					invalidate(HEAD, next);
-				}
+				HEAD = rewrite.step(HEAD, next);	
 			} else {
 				// There are no activations left to try so we are done.
 				break;
 			}
 		}
-	}
-
-	@Override
-	public int initialise(Automaton automaton) {
-		HEAD = rewrite.add(automaton);
-		return HEAD;
 	}
 
 	/**

@@ -3,17 +3,17 @@ package wyrw.core;
 import java.util.List;
 
 import wyautl.core.Automaton;
+import wyrw.util.AbstractActivation;
 
 public interface Rewrite {
-
-	/**
-	 * Add a new state to the rewrite.
-	 * 
-	 * @param state
-	 * @return
-	 */
-	public int add(Automaton automaton);
 	
+	/**
+	 * Initialise the rewrite with a given automaton.
+	 * 
+	 * @param automaton
+	 */
+	public int initialise(Automaton automaton);
+
 	/**
 	 * Add a new step to the rewrite.
 	 * 
@@ -21,7 +21,7 @@ public interface Rewrite {
 	 * @param activation
 	 * @return
 	 */
-	public int add(Step step);
+	public int step(int from, int activation);
 	
 	/**
 	 * Get the list of steps which make up this rewrite. This list is not
@@ -112,7 +112,7 @@ public interface Rewrite {
 		 * @param index
 		 * @return
 		 */
-		public Activation activation(int index);
+		public AbstractActivation activation(int index);
 		
 		/**
 		 * Return the rewrite step associated with this activation
@@ -130,5 +130,20 @@ public interface Rewrite {
 		 * @return
 		 */
 		public int select();
+	}
+	
+	/**
+	 * Represents a concrete activation of this rule to a given automaton
+	 * 
+	 * @author David J. Pearce
+	 *
+	 */
+	public interface Activation {
+		
+		public RewriteRule rule();
+		
+		public int target();
+		
+		public int apply(Automaton automaton);
 	}
 }

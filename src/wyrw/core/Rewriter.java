@@ -38,47 +38,14 @@ import wyautl.core.Automaton;
 public interface Rewriter {
 	
 	/**
-	 * Initialise the rewrite with a given automaton. This is done through the
-	 * rewriter to allow it the possibility to initialise state and/or update
-	 * the automaton in some way.
-	 * 
-	 * @param automaton
+	 * Reset the rewriter to a given state in the rewrite.
 	 */
-	public int initialise(Automaton automaton);
+	public void reset(int state);
 	
 	/**
 	 * Request that the rewriter take a number of steps (upto a given maximum).
 	 *
 	 * @return
 	 */
-	public void apply(int maxSteps);
-	
-	/**
-	 * Responsible for performing in-place normalisation on the automaton after
-	 * a successful rule application. This could be actually nothing, for
-	 * example; or it could be a basic level of compaction and minimisation, or
-	 * something more advanced.
-	 * 
-	 * @author David J. Pearce
-	 *
-	 */
-	public static interface Normaliser {
-		public void apply(Automaton automaton);
-	}
-	
-	/**
-	 * A simple normalisation implementation which applies minimisation and
-	 * compaction to the automaton, but nothing else.
-	 * 
-	 * @author David J. Pearce
-	 *
-	 */
-	public static Normaliser SIMPLE_NORMALISER = new Normaliser() {
-
-		@Override
-		public void apply(Automaton automaton) {
-			automaton.minimise();
-			automaton.compact();
-		}			
-	};
+	public void apply(int maxSteps);	
 }

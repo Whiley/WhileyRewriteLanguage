@@ -25,7 +25,10 @@
 
 package wyrw.core;
 
+import java.util.List;
+
 import wyautl.core.Automaton;
+import wyrw.util.AbstractActivation;
 
 /**
  * A rewrite rule guaranteed to reduce the Automaton (in some sense). Typically,
@@ -72,4 +75,56 @@ import wyautl.core.Automaton;
  */
 public interface ReductionRule extends RewriteRule {
 
+	/**
+	 * Probe a given root to see whether or not this rule could be applied to
+	 * it. If it can, the corresponding activation record(s) are added to the
+	 * list. Note that, under no circumstances is this function permitted to
+	 * modify the automaton.
+	 *
+	 * @param automaton
+	 *            Automaton to probe.
+	 * @param target
+	 *            State to use as the target for the probe.
+	 * @param activations
+	 *            List of activations onto which to add any which are discovered
+	 *            during the probe.
+	 *
+	 * @return
+	 */
+	public void probe(Automaton automaton, int target, List<Reduction.Activation> activations);
+
+	/**
+	 * <p>
+	 * Apply this rule to a given automaton using the given continuation state.
+	 * The application may or may not actually modify the automaton and this is
+	 * indicated by the return value.
+	 * </p>
+	 * <p>
+	 * After a <i>successful</i> rule application, the automaton may in a
+	 * different state as before. However, some constraints apply. Whilst new
+	 * states may be added to the automaton, states which existed prior to
+	 * <code>apply()</code> being called cannot be removed (even if they become
+	 * unreachable). Thus, a separate call is required to place the automaton
+	 * into a compacted state.
+	 * </p>
+	 * <p>
+	 * After an <i>unsuccessful</i> rule application, the automaton should be
+	 * left in an identical state as before <code>apply()</code> was called.
+	 * This means any temporary states added during <code>apply()</code> must be
+	 * removed from the automaton.
+	 * </p>
+	 *
+	 * @param automaton
+	 *            --- The automaton to be rewritten.
+	 * @param state
+	 *            --- Data required by the rewrite to perform the rewrite. This
+	 *            may be null if no such data is required.
+	 *
+	 * @return The state that was rewritten to. Using this, and state[0], you
+	 *         can determine which state was rewritten from, and which was
+	 *         rewritten to. In the case of an unsuccessful rewrite, then K_Void
+	 *         is returned (-1).
+	 */
+	public int apply(Automaton automaton, int[] state);
+	
 }

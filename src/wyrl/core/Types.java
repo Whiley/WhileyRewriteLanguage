@@ -7,10 +7,10 @@ import wyautl.util.BigRational;
 import wyautl.io.*;
 import wyautl.core.*;
 import wyrw.core.*;
+import wyrw.util.AbstractRewriteRule;
 import wyrl.core.*;
 import wyrl.util.Runtime;
 import wyrl.util.Pair;
-import wyrl.util.AbstractRewriteRule;
 
 public final class Types {
 	// term $4<Not($2<^Type<$4|Atom<Not(^Proton<Any|Void|Bool|Int|Real|String>)|Proton<Any|Void|Bool|Int|Real|String>>|Or(^{$2...})|And(^{$2...})|Ref($2)|Meta($2)|Nominal(^[^string,$2])|Term(^[^string,$2...])|Set(^[$2,^{|$2...|}[$2...]])|Bag(^[$2,^{|$2...|}[$2...]])|List(^[$2,^[$2...]])>>)>
@@ -24,15 +24,15 @@ public final class Types {
 
 		public Reduction_0(Pattern.Term pattern) { super(pattern); }
 
-		public final void probe(Automaton automaton, int root, List<Activation> activations) {
-			int r0 = root;
+		public final void probe(Automaton automaton, int target, List<Reduction.Activation> activations) {
+			int r0 = target;
 			Automaton.State s0 = automaton.get(r0);
 			if(s0.kind == K_Not) {
 				Automaton.Term t0 = (Automaton.Term) s0;
 				int r1 = t0.contents;
 				if(Runtime.accepts(type0,automaton,automaton.get(r1), SCHEMA)) {
 					int[] state = {r0, r1};
-					activations.add(new Activation(this,null,state));
+					activations.add(new Reduction.Activation(this,null,state));
 				}
 			}
 		}
@@ -51,23 +51,21 @@ public final class Types {
 		public final String name() { return ""; }
 		public final int rank() { return 0; }
 
-		public final int minimum() { return 1; }
-		public final int maximum() { return Integer.MAX_VALUE; }
 	}
 	// 
 	private final static class Reduction_1 extends AbstractRewriteRule implements ReductionRule {
 
 		public Reduction_1(Pattern.Term pattern) { super(pattern); }
 
-		public final void probe(Automaton automaton, int root, List<Activation> activations) {
-			int r0 = root;
+		public final void probe(Automaton automaton, int target, List<Reduction.Activation> activations) {
+			int r0 = target;
 			Automaton.State s0 = automaton.get(r0);
 			if(s0.kind == K_Not) {
 				Automaton.Term t0 = (Automaton.Term) s0;
 				int r1 = t0.contents;
 				if(Runtime.accepts(type1,automaton,automaton.get(r1), SCHEMA)) {
 					int[] state = {r0, r1};
-					activations.add(new Activation(this,null,state));
+					activations.add(new Reduction.Activation(this,null,state));
 				}
 			}
 		}
@@ -86,16 +84,14 @@ public final class Types {
 		public final String name() { return ""; }
 		public final int rank() { return 0; }
 
-		public final int minimum() { return 1; }
-		public final int maximum() { return Integer.MAX_VALUE; }
 	}
 	// 
 	private final static class Reduction_2 extends AbstractRewriteRule implements ReductionRule {
 
 		public Reduction_2(Pattern.Term pattern) { super(pattern); }
 
-		public final void probe(Automaton automaton, int root, List<Activation> activations) {
-			int r0 = root;
+		public final void probe(Automaton automaton, int target, List<Reduction.Activation> activations) {
+			int r0 = target;
 			Automaton.State s0 = automaton.get(r0);
 			if(s0.kind == K_Not) {
 				Automaton.Term t0 = (Automaton.Term) s0;
@@ -107,7 +103,7 @@ public final class Types {
 					Automaton.State s2 = automaton.get(r2);
 					Automaton.Collection c2 = (Automaton.Collection) s2;
 					int[] state = {r0, r1, r2, 0};
-					activations.add(new Activation(this,null,state));
+					activations.add(new Reduction.Activation(this,null,state));
 				}
 			}
 		}
@@ -141,16 +137,14 @@ public final class Types {
 		public final String name() { return ""; }
 		public final int rank() { return 0; }
 
-		public final int minimum() { return 2; }
-		public final int maximum() { return Integer.MAX_VALUE; }
 	}
 	// 
 	private final static class Reduction_3 extends AbstractRewriteRule implements ReductionRule {
 
 		public Reduction_3(Pattern.Term pattern) { super(pattern); }
 
-		public final void probe(Automaton automaton, int root, List<Activation> activations) {
-			int r0 = root;
+		public final void probe(Automaton automaton, int target, List<Reduction.Activation> activations) {
+			int r0 = target;
 			Automaton.State s0 = automaton.get(r0);
 			if(s0.kind == K_Not) {
 				Automaton.Term t0 = (Automaton.Term) s0;
@@ -162,7 +156,7 @@ public final class Types {
 					Automaton.State s2 = automaton.get(r2);
 					Automaton.Collection c2 = (Automaton.Collection) s2;
 					int[] state = {r0, r1, r2, 0};
-					activations.add(new Activation(this,null,state));
+					activations.add(new Reduction.Activation(this,null,state));
 				}
 			}
 		}
@@ -196,8 +190,6 @@ public final class Types {
 		public final String name() { return ""; }
 		public final int rank() { return 0; }
 
-		public final int minimum() { return 2; }
-		public final int maximum() { return Integer.MAX_VALUE; }
 	}
 	// term $7<And($5<^{$2<^Type<$7|Atom<Not(^Proton<Any|Void|Bool|Int|Real|String>)|Proton<Any|Void|Bool|Int|Real|String>>|Or($5)|Not($2)|Ref($2)|Meta($2)|Nominal(^[^string,$2])|Term(^[^string,$2...])|Set(^[$2,^{|$2...|}[$2...]])|Bag(^[$2,^{|$2...|}[$2...]])|List(^[$2,^[$2...]])>>...}>)>
 	public final static int K_And = 1;
@@ -215,8 +207,8 @@ public final class Types {
 
 		public Reduction_4(Pattern.Term pattern) { super(pattern); }
 
-		public final void probe(Automaton automaton, int root, List<Activation> activations) {
-			int r0 = root;
+		public final void probe(Automaton automaton, int target, List<Reduction.Activation> activations) {
+			int r0 = target;
 			Automaton.State s0 = automaton.get(r0);
 			if(s0.kind == K_And) {
 				Automaton.Term t0 = (Automaton.Term) s0;
@@ -227,7 +219,7 @@ public final class Types {
 					for(int r3=0;r3!=c1.size();++r3) {
 						int r2 = c1.get(r3);
 						int[] state = {r0, r1, r2, r3};
-						activations.add(new Activation(this,null,state));
+						activations.add(new Reduction.Activation(this,null,state));
 					}
 				}
 			}
@@ -247,16 +239,14 @@ public final class Types {
 		public final String name() { return ""; }
 		public final int rank() { return 0; }
 
-		public final int minimum() { return 2; }
-		public final int maximum() { return Integer.MAX_VALUE; }
 	}
 	// 
 	private final static class Reduction_5 extends AbstractRewriteRule implements ReductionRule {
 
 		public Reduction_5(Pattern.Term pattern) { super(pattern); }
 
-		public final void probe(Automaton automaton, int root, List<Activation> activations) {
-			int r0 = root;
+		public final void probe(Automaton automaton, int target, List<Reduction.Activation> activations) {
+			int r0 = target;
 			Automaton.State s0 = automaton.get(r0);
 			if(s0.kind == K_And) {
 				Automaton.Term t0 = (Automaton.Term) s0;
@@ -273,7 +263,7 @@ public final class Types {
 							Automaton.State s4 = automaton.get(r4);
 							Automaton.Collection c4 = (Automaton.Collection) s4;
 							int[] state = {r0, r1, r2, r3, r4, 0, 0};
-							activations.add(new Activation(this,null,state));
+							activations.add(new Reduction.Activation(this,null,state));
 						}
 					}
 				}
@@ -310,16 +300,14 @@ public final class Types {
 		public final String name() { return ""; }
 		public final int rank() { return 0; }
 
-		public final int minimum() { return 3; }
-		public final int maximum() { return Integer.MAX_VALUE; }
 	}
 	// 
 	private final static class Reduction_6 extends AbstractRewriteRule implements ReductionRule {
 
 		public Reduction_6(Pattern.Term pattern) { super(pattern); }
 
-		public final void probe(Automaton automaton, int root, List<Activation> activations) {
-			int r0 = root;
+		public final void probe(Automaton automaton, int target, List<Reduction.Activation> activations) {
+			int r0 = target;
 			Automaton.State s0 = automaton.get(r0);
 			if(s0.kind == K_And) {
 				Automaton.Term t0 = (Automaton.Term) s0;
@@ -336,7 +324,7 @@ public final class Types {
 							Automaton.State s4 = automaton.get(r4);
 							Automaton.Collection c4 = (Automaton.Collection) s4;
 							int[] state = {r0, r1, r2, r3, r4, 0, 0};
-							activations.add(new Activation(this,null,state));
+							activations.add(new Reduction.Activation(this,null,state));
 						}
 					}
 				}
@@ -382,8 +370,6 @@ public final class Types {
 		public final String name() { return ""; }
 		public final int rank() { return 0; }
 
-		public final int minimum() { return 3; }
-		public final int maximum() { return Integer.MAX_VALUE; }
 	}
 	// term $7<Or($5<^{$2<^Type<$7|Atom<Not(^Proton<Any|Void|Bool|Int|Real|String>)|Proton<Any|Void|Bool|Int|Real|String>>|And($5)|Not($2)|Ref($2)|Meta($2)|Nominal(^[^string,$2])|Term(^[^string,$2...])|Set(^[$2,^{|$2...|}[$2...]])|Bag(^[$2,^{|$2...|}[$2...]])|List(^[$2,^[$2...]])>>...}>)>
 	public final static int K_Or = 2;
@@ -401,8 +387,8 @@ public final class Types {
 
 		public Reduction_7(Pattern.Term pattern) { super(pattern); }
 
-		public final void probe(Automaton automaton, int root, List<Activation> activations) {
-			int r0 = root;
+		public final void probe(Automaton automaton, int target, List<Reduction.Activation> activations) {
+			int r0 = target;
 			Automaton.State s0 = automaton.get(r0);
 			if(s0.kind == K_Or) {
 				Automaton.Term t0 = (Automaton.Term) s0;
@@ -413,7 +399,7 @@ public final class Types {
 					for(int r3=0;r3!=c1.size();++r3) {
 						int r2 = c1.get(r3);
 						int[] state = {r0, r1, r2, r3};
-						activations.add(new Activation(this,null,state));
+						activations.add(new Reduction.Activation(this,null,state));
 					}
 				}
 			}
@@ -433,16 +419,14 @@ public final class Types {
 		public final String name() { return ""; }
 		public final int rank() { return 0; }
 
-		public final int minimum() { return 2; }
-		public final int maximum() { return Integer.MAX_VALUE; }
 	}
 	// 
 	private final static class Reduction_8 extends AbstractRewriteRule implements ReductionRule {
 
 		public Reduction_8(Pattern.Term pattern) { super(pattern); }
 
-		public final void probe(Automaton automaton, int root, List<Activation> activations) {
-			int r0 = root;
+		public final void probe(Automaton automaton, int target, List<Reduction.Activation> activations) {
+			int r0 = target;
 			Automaton.State s0 = automaton.get(r0);
 			if(s0.kind == K_Or) {
 				Automaton.Term t0 = (Automaton.Term) s0;
@@ -459,7 +443,7 @@ public final class Types {
 							Automaton.State s4 = automaton.get(r4);
 							Automaton.Collection c4 = (Automaton.Collection) s4;
 							int[] state = {r0, r1, r2, r3, r4, 0, 0};
-							activations.add(new Activation(this,null,state));
+							activations.add(new Reduction.Activation(this,null,state));
 						}
 					}
 				}
@@ -496,8 +480,6 @@ public final class Types {
 		public final String name() { return ""; }
 		public final int rank() { return 0; }
 
-		public final int minimum() { return 3; }
-		public final int maximum() { return Integer.MAX_VALUE; }
 	}
 	// term Any
 	public final static int K_Any = 3;
@@ -528,8 +510,8 @@ public final class Types {
 
 		public Reduction_9(Pattern.Term pattern) { super(pattern); }
 
-		public final void probe(Automaton automaton, int root, List<Activation> activations) {
-			int r0 = root;
+		public final void probe(Automaton automaton, int target, List<Reduction.Activation> activations) {
+			int r0 = target;
 			Automaton.State s0 = automaton.get(r0);
 			if(s0.kind == K_And) {
 				Automaton.Term t0 = (Automaton.Term) s0;
@@ -541,7 +523,7 @@ public final class Types {
 						int r2 = c1.get(r3);
 						if(Runtime.accepts(type1,automaton,automaton.get(r2), SCHEMA)) {
 							int[] state = {r0, r1, r2, r3, 0};
-							activations.add(new Activation(this,null,state));
+							activations.add(new Reduction.Activation(this,null,state));
 						}
 					}
 				}
@@ -570,16 +552,14 @@ public final class Types {
 		public final String name() { return ""; }
 		public final int rank() { return 0; }
 
-		public final int minimum() { return 2; }
-		public final int maximum() { return Integer.MAX_VALUE; }
 	}
 	// 
 	private final static class Reduction_10 extends AbstractRewriteRule implements ReductionRule {
 
 		public Reduction_10(Pattern.Term pattern) { super(pattern); }
 
-		public final void probe(Automaton automaton, int root, List<Activation> activations) {
-			int r0 = root;
+		public final void probe(Automaton automaton, int target, List<Reduction.Activation> activations) {
+			int r0 = target;
 			Automaton.State s0 = automaton.get(r0);
 			if(s0.kind == K_And) {
 				Automaton.Term t0 = (Automaton.Term) s0;
@@ -591,7 +571,7 @@ public final class Types {
 						int r2 = c1.get(r3);
 						if(Runtime.accepts(type0,automaton,automaton.get(r2), SCHEMA)) {
 							int[] state = {r0, r1, r2, r3, 0};
-							activations.add(new Activation(this,null,state));
+							activations.add(new Reduction.Activation(this,null,state));
 						}
 					}
 				}
@@ -621,16 +601,14 @@ public final class Types {
 		public final String name() { return ""; }
 		public final int rank() { return 0; }
 
-		public final int minimum() { return 2; }
-		public final int maximum() { return Integer.MAX_VALUE; }
 	}
 	// 
 	private final static class Reduction_11 extends AbstractRewriteRule implements ReductionRule {
 
 		public Reduction_11(Pattern.Term pattern) { super(pattern); }
 
-		public final void probe(Automaton automaton, int root, List<Activation> activations) {
-			int r0 = root;
+		public final void probe(Automaton automaton, int target, List<Reduction.Activation> activations) {
+			int r0 = target;
 			Automaton.State s0 = automaton.get(r0);
 			if(s0.kind == K_And) {
 				Automaton.Term t0 = (Automaton.Term) s0;
@@ -646,7 +624,7 @@ public final class Types {
 								int r4 = c1.get(r5);
 								if(Runtime.accepts(type3,automaton,automaton.get(r4), SCHEMA)) {
 									int[] state = {r0, r1, r2, r3, r4, r5, 0};
-									activations.add(new Activation(this,null,state));
+									activations.add(new Reduction.Activation(this,null,state));
 								}
 							}
 						}
@@ -689,16 +667,14 @@ public final class Types {
 		public final String name() { return ""; }
 		public final int rank() { return 0; }
 
-		public final int minimum() { return 0; }
-		public final int maximum() { return Integer.MAX_VALUE; }
 	}
 	// 
 	private final static class Reduction_12 extends AbstractRewriteRule implements ReductionRule {
 
 		public Reduction_12(Pattern.Term pattern) { super(pattern); }
 
-		public final void probe(Automaton automaton, int root, List<Activation> activations) {
-			int r0 = root;
+		public final void probe(Automaton automaton, int target, List<Reduction.Activation> activations) {
+			int r0 = target;
 			Automaton.State s0 = automaton.get(r0);
 			if(s0.kind == K_And) {
 				Automaton.Term t0 = (Automaton.Term) s0;
@@ -718,7 +694,7 @@ public final class Types {
 									int r6 = t4.contents;
 									if(Runtime.accepts(type3,automaton,automaton.get(r6), SCHEMA)) {
 										int[] state = {r0, r1, r2, r3, r4, r5, r6, 0};
-										activations.add(new Activation(this,null,state));
+										activations.add(new Reduction.Activation(this,null,state));
 									}
 								}
 							}
@@ -768,16 +744,14 @@ public final class Types {
 		public final String name() { return ""; }
 		public final int rank() { return 0; }
 
-		public final int minimum() { return 0; }
-		public final int maximum() { return Integer.MAX_VALUE; }
 	}
 	// 
 	private final static class Reduction_13 extends AbstractRewriteRule implements ReductionRule {
 
 		public Reduction_13(Pattern.Term pattern) { super(pattern); }
 
-		public final void probe(Automaton automaton, int root, List<Activation> activations) {
-			int r0 = root;
+		public final void probe(Automaton automaton, int target, List<Reduction.Activation> activations) {
+			int r0 = target;
 			Automaton.State s0 = automaton.get(r0);
 			if(s0.kind == K_Or) {
 				Automaton.Term t0 = (Automaton.Term) s0;
@@ -789,7 +763,7 @@ public final class Types {
 						int r2 = c1.get(r3);
 						if(Runtime.accepts(type0,automaton,automaton.get(r2), SCHEMA)) {
 							int[] state = {r0, r1, r2, r3, 0};
-							activations.add(new Activation(this,null,state));
+							activations.add(new Reduction.Activation(this,null,state));
 						}
 					}
 				}
@@ -818,16 +792,14 @@ public final class Types {
 		public final String name() { return ""; }
 		public final int rank() { return 0; }
 
-		public final int minimum() { return 2; }
-		public final int maximum() { return Integer.MAX_VALUE; }
 	}
 	// 
 	private final static class Reduction_14 extends AbstractRewriteRule implements ReductionRule {
 
 		public Reduction_14(Pattern.Term pattern) { super(pattern); }
 
-		public final void probe(Automaton automaton, int root, List<Activation> activations) {
-			int r0 = root;
+		public final void probe(Automaton automaton, int target, List<Reduction.Activation> activations) {
+			int r0 = target;
 			Automaton.State s0 = automaton.get(r0);
 			if(s0.kind == K_Or) {
 				Automaton.Term t0 = (Automaton.Term) s0;
@@ -839,7 +811,7 @@ public final class Types {
 						int r2 = c1.get(r3);
 						if(Runtime.accepts(type1,automaton,automaton.get(r2), SCHEMA)) {
 							int[] state = {r0, r1, r2, r3, 0};
-							activations.add(new Activation(this,null,state));
+							activations.add(new Reduction.Activation(this,null,state));
 						}
 					}
 				}
@@ -869,8 +841,6 @@ public final class Types {
 		public final String name() { return ""; }
 		public final int rank() { return 0; }
 
-		public final int minimum() { return 2; }
-		public final int maximum() { return Integer.MAX_VALUE; }
 	}
 	// term $4<Ref($2<^Type<$4|Atom<Not(^Proton<Any|Void|Bool|Int|Real|String>)|Proton<Any|Void|Bool|Int|Real|String>>|Or(^{$2...})|And(^{$2...})|Not($2)|Meta($2)|Nominal(^[^string,$2])|Term(^[^string,$2...])|Set(^[$2,^{|$2...|}[$2...]])|Bag(^[$2,^{|$2...|}[$2...]])|List(^[$2,^[$2...]])>>)>
 	public final static int K_Ref = 9;
@@ -883,15 +853,15 @@ public final class Types {
 
 		public Reduction_15(Pattern.Term pattern) { super(pattern); }
 
-		public final void probe(Automaton automaton, int root, List<Activation> activations) {
-			int r0 = root;
+		public final void probe(Automaton automaton, int target, List<Reduction.Activation> activations) {
+			int r0 = target;
 			Automaton.State s0 = automaton.get(r0);
 			if(s0.kind == K_Ref) {
 				Automaton.Term t0 = (Automaton.Term) s0;
 				int r1 = t0.contents;
 				if(Runtime.accepts(type1,automaton,automaton.get(r1), SCHEMA)) {
 					int[] state = {r0, r1};
-					activations.add(new Activation(this,null,state));
+					activations.add(new Reduction.Activation(this,null,state));
 				}
 			}
 		}
@@ -910,16 +880,14 @@ public final class Types {
 		public final String name() { return ""; }
 		public final int rank() { return 0; }
 
-		public final int minimum() { return 1; }
-		public final int maximum() { return Integer.MAX_VALUE; }
 	}
 	// 
 	private final static class Reduction_16 extends AbstractRewriteRule implements ReductionRule {
 
 		public Reduction_16(Pattern.Term pattern) { super(pattern); }
 
-		public final void probe(Automaton automaton, int root, List<Activation> activations) {
-			int r0 = root;
+		public final void probe(Automaton automaton, int target, List<Reduction.Activation> activations) {
+			int r0 = target;
 			Automaton.State s0 = automaton.get(r0);
 			if(s0.kind == K_And) {
 				Automaton.Term t0 = (Automaton.Term) s0;
@@ -941,7 +909,7 @@ public final class Types {
 									Automaton.Term t5 = (Automaton.Term) s5;
 									int r7 = t5.contents;
 									int[] state = {r0, r1, r2, r3, r4, r5, r6, r7, 0};
-									activations.add(new Activation(this,null,state));
+									activations.add(new Reduction.Activation(this,null,state));
 								}
 							}
 						}
@@ -983,16 +951,14 @@ public final class Types {
 		public final String name() { return ""; }
 		public final int rank() { return 0; }
 
-		public final int minimum() { return 5; }
-		public final int maximum() { return Integer.MAX_VALUE; }
 	}
 	// 
 	private final static class Reduction_17 extends AbstractRewriteRule implements ReductionRule {
 
 		public Reduction_17(Pattern.Term pattern) { super(pattern); }
 
-		public final void probe(Automaton automaton, int root, List<Activation> activations) {
-			int r0 = root;
+		public final void probe(Automaton automaton, int target, List<Reduction.Activation> activations) {
+			int r0 = target;
 			Automaton.State s0 = automaton.get(r0);
 			if(s0.kind == K_Or) {
 				Automaton.Term t0 = (Automaton.Term) s0;
@@ -1015,7 +981,7 @@ public final class Types {
 										Automaton.Term t5 = (Automaton.Term) s5;
 										int r7 = t5.contents;
 										int[] state = {r0, r1, r2, r3, r4, r5, r6, r7, 0};
-										activations.add(new Activation(this,null,state));
+										activations.add(new Reduction.Activation(this,null,state));
 									}
 								}
 							}
@@ -1051,16 +1017,14 @@ public final class Types {
 		public final String name() { return ""; }
 		public final int rank() { return 0; }
 
-		public final int minimum() { return 5; }
-		public final int maximum() { return Integer.MAX_VALUE; }
 	}
 	// 
 	private final static class Reduction_18 extends AbstractRewriteRule implements ReductionRule {
 
 		public Reduction_18(Pattern.Term pattern) { super(pattern); }
 
-		public final void probe(Automaton automaton, int root, List<Activation> activations) {
-			int r0 = root;
+		public final void probe(Automaton automaton, int target, List<Reduction.Activation> activations) {
+			int r0 = target;
 			Automaton.State s0 = automaton.get(r0);
 			if(s0.kind == K_And) {
 				Automaton.Term t0 = (Automaton.Term) s0;
@@ -1086,7 +1050,7 @@ public final class Types {
 										Automaton.Term t7 = (Automaton.Term) s7;
 										int r8 = t7.contents;
 										int[] state = {r0, r1, r2, r3, r4, r5, r6, r7, r8, 0};
-										activations.add(new Activation(this,null,state));
+										activations.add(new Reduction.Activation(this,null,state));
 									}
 								}
 							}
@@ -1131,8 +1095,6 @@ public final class Types {
 		public final String name() { return ""; }
 		public final int rank() { return 0; }
 
-		public final int minimum() { return 6; }
-		public final int maximum() { return Integer.MAX_VALUE; }
 	}
 	// term $4<Meta($2<^Type<$4|Atom<Not(^Proton<Any|Void|Bool|Int|Real|String>)|Proton<Any|Void|Bool|Int|Real|String>>|Or(^{$2...})|And(^{$2...})|Not($2)|Ref($2)|Nominal(^[^string,$2])|Term(^[^string,$2...])|Set(^[$2,^{|$2...|}[$2...]])|Bag(^[$2,^{|$2...|}[$2...]])|List(^[$2,^[$2...]])>>)>
 	public final static int K_Meta = 10;
@@ -1145,15 +1107,15 @@ public final class Types {
 
 		public Reduction_19(Pattern.Term pattern) { super(pattern); }
 
-		public final void probe(Automaton automaton, int root, List<Activation> activations) {
-			int r0 = root;
+		public final void probe(Automaton automaton, int target, List<Reduction.Activation> activations) {
+			int r0 = target;
 			Automaton.State s0 = automaton.get(r0);
 			if(s0.kind == K_Meta) {
 				Automaton.Term t0 = (Automaton.Term) s0;
 				int r1 = t0.contents;
 				if(Runtime.accepts(type1,automaton,automaton.get(r1), SCHEMA)) {
 					int[] state = {r0, r1};
-					activations.add(new Activation(this,null,state));
+					activations.add(new Reduction.Activation(this,null,state));
 				}
 			}
 		}
@@ -1172,16 +1134,14 @@ public final class Types {
 		public final String name() { return ""; }
 		public final int rank() { return 0; }
 
-		public final int minimum() { return 1; }
-		public final int maximum() { return Integer.MAX_VALUE; }
 	}
 	// 
 	private final static class Reduction_20 extends AbstractRewriteRule implements ReductionRule {
 
 		public Reduction_20(Pattern.Term pattern) { super(pattern); }
 
-		public final void probe(Automaton automaton, int root, List<Activation> activations) {
-			int r0 = root;
+		public final void probe(Automaton automaton, int target, List<Reduction.Activation> activations) {
+			int r0 = target;
 			Automaton.State s0 = automaton.get(r0);
 			if(s0.kind == K_And) {
 				Automaton.Term t0 = (Automaton.Term) s0;
@@ -1203,7 +1163,7 @@ public final class Types {
 									Automaton.Term t5 = (Automaton.Term) s5;
 									int r7 = t5.contents;
 									int[] state = {r0, r1, r2, r3, r4, r5, r6, r7, 0};
-									activations.add(new Activation(this,null,state));
+									activations.add(new Reduction.Activation(this,null,state));
 								}
 							}
 						}
@@ -1245,16 +1205,14 @@ public final class Types {
 		public final String name() { return ""; }
 		public final int rank() { return 0; }
 
-		public final int minimum() { return 5; }
-		public final int maximum() { return Integer.MAX_VALUE; }
 	}
 	// 
 	private final static class Reduction_21 extends AbstractRewriteRule implements ReductionRule {
 
 		public Reduction_21(Pattern.Term pattern) { super(pattern); }
 
-		public final void probe(Automaton automaton, int root, List<Activation> activations) {
-			int r0 = root;
+		public final void probe(Automaton automaton, int target, List<Reduction.Activation> activations) {
+			int r0 = target;
 			Automaton.State s0 = automaton.get(r0);
 			if(s0.kind == K_Or) {
 				Automaton.Term t0 = (Automaton.Term) s0;
@@ -1277,7 +1235,7 @@ public final class Types {
 										Automaton.Term t5 = (Automaton.Term) s5;
 										int r7 = t5.contents;
 										int[] state = {r0, r1, r2, r3, r4, r5, r6, r7, 0};
-										activations.add(new Activation(this,null,state));
+										activations.add(new Reduction.Activation(this,null,state));
 									}
 								}
 							}
@@ -1313,16 +1271,14 @@ public final class Types {
 		public final String name() { return ""; }
 		public final int rank() { return 0; }
 
-		public final int minimum() { return 5; }
-		public final int maximum() { return Integer.MAX_VALUE; }
 	}
 	// 
 	private final static class Reduction_22 extends AbstractRewriteRule implements ReductionRule {
 
 		public Reduction_22(Pattern.Term pattern) { super(pattern); }
 
-		public final void probe(Automaton automaton, int root, List<Activation> activations) {
-			int r0 = root;
+		public final void probe(Automaton automaton, int target, List<Reduction.Activation> activations) {
+			int r0 = target;
 			Automaton.State s0 = automaton.get(r0);
 			if(s0.kind == K_And) {
 				Automaton.Term t0 = (Automaton.Term) s0;
@@ -1348,7 +1304,7 @@ public final class Types {
 										Automaton.Term t7 = (Automaton.Term) s7;
 										int r8 = t7.contents;
 										int[] state = {r0, r1, r2, r3, r4, r5, r6, r7, r8, 0};
-										activations.add(new Activation(this,null,state));
+										activations.add(new Reduction.Activation(this,null,state));
 									}
 								}
 							}
@@ -1393,8 +1349,6 @@ public final class Types {
 		public final String name() { return ""; }
 		public final int rank() { return 0; }
 
-		public final int minimum() { return 6; }
-		public final int maximum() { return Integer.MAX_VALUE; }
 	}
 	// term $9<Term(^[^string,$3<^Type<$9|Atom<Not(^Proton<Any|Void|Bool|Int|Real|String>)|Proton<Any|Void|Bool|Int|Real|String>>|Or(^{$3...})|And(^{$3...})|Not($3)|Ref($3)|Meta($3)|Nominal(^[^string,$3])|Set(^[$3,^{|$3...|}[$3...]])|Bag(^[$3,^{|$3...|}[$3...]])|List(^[$3,^[$3...]])>>...])>
 	public final static int K_Term = 11;
@@ -1412,8 +1366,8 @@ public final class Types {
 
 		public Reduction_23(Pattern.Term pattern) { super(pattern); }
 
-		public final void probe(Automaton automaton, int root, List<Activation> activations) {
-			int r0 = root;
+		public final void probe(Automaton automaton, int target, List<Reduction.Activation> activations) {
+			int r0 = target;
 			Automaton.State s0 = automaton.get(r0);
 			if(s0.kind == K_And) {
 				Automaton.Term t0 = (Automaton.Term) s0;
@@ -1445,7 +1399,7 @@ public final class Types {
 											int r10 = l9.get(0);
 											int r11 = l9.get(1);
 											int[] state = {r0, r1, r2, r3, r4, r5, r6, r7, r8, r9, r10, r11, 0};
-											activations.add(new Activation(this,null,state));
+											activations.add(new Reduction.Activation(this,null,state));
 										}
 									}
 								}
@@ -1501,8 +1455,6 @@ public final class Types {
 		public final String name() { return ""; }
 		public final int rank() { return 0; }
 
-		public final int minimum() { return 9; }
-		public final int maximum() { return Integer.MAX_VALUE; }
 	}
 	// term $9<Nominal(^[^string,$3<^Type<$9|Atom<Not(^Proton<Any|Void|Bool|Int|Real|String>)|Proton<Any|Void|Bool|Int|Real|String>>|Or(^{$3...})|And(^{$3...})|Not($3)|Ref($3)|Meta($3)|Term(^[^string,$3...])|Set(^[$3,^{|$3...|}[$3...]])|Bag(^[$3,^{|$3...|}[$3...]])|List(^[$3,^[$3...]])>>])>
 	public final static int K_Nominal = 12;
@@ -1520,8 +1472,8 @@ public final class Types {
 
 		public Reduction_24(Pattern.Term pattern) { super(pattern); }
 
-		public final void probe(Automaton automaton, int root, List<Activation> activations) {
-			int r0 = root;
+		public final void probe(Automaton automaton, int target, List<Reduction.Activation> activations) {
+			int r0 = target;
 			Automaton.State s0 = automaton.get(r0);
 			if(s0.kind == K_Nominal) {
 				Automaton.Term t0 = (Automaton.Term) s0;
@@ -1531,7 +1483,7 @@ public final class Types {
 				int r2 = l1.get(0);
 				int r3 = l1.get(1);
 				int[] state = {r0, r1, r2, r3};
-				activations.add(new Activation(this,null,state));
+				activations.add(new Reduction.Activation(this,null,state));
 			}
 		}
 
@@ -1548,8 +1500,6 @@ public final class Types {
 		public final String name() { return ""; }
 		public final int rank() { return 0; }
 
-		public final int minimum() { return 3; }
-		public final int maximum() { return Integer.MAX_VALUE; }
 	}
 	// term Fun(^[$2<^Type<Atom<Not(^Proton<Any|Void|Bool|Int|Real|String>)|Proton<Any|Void|Bool|Int|Real|String>>|Or(^{$2...})|And(^{$2...})|Not($2)|Ref($2)|Meta($2)|Nominal(^[^string,$2])|Term(^[^string,$2...])|Set(^[$2,^{|$2...|}[$2...]])|Bag(^[$2,^{|$2...|}[$2...]])|List(^[$2,^[$2...]])>>,$2])
 	public final static int K_Fun = 13;
@@ -1578,8 +1528,8 @@ public final class Types {
 
 		public Reduction_25(Pattern.Term pattern) { super(pattern); }
 
-		public final void probe(Automaton automaton, int root, List<Activation> activations) {
-			int r0 = root;
+		public final void probe(Automaton automaton, int target, List<Reduction.Activation> activations) {
+			int r0 = target;
 			Automaton.State s0 = automaton.get(r0);
 			if(s0.kind == K_Set) {
 				Automaton.Term t0 = (Automaton.Term) s0;
@@ -1595,7 +1545,7 @@ public final class Types {
 						int r4 = c3.get(r5);
 						if(Runtime.accepts(type1,automaton,automaton.get(r4), SCHEMA)) {
 							int[] state = {r0, r1, r2, r3, r4, r5, 0};
-							activations.add(new Activation(this,null,state));
+							activations.add(new Reduction.Activation(this,null,state));
 						}
 					}
 				}
@@ -1628,8 +1578,6 @@ public final class Types {
 		public final String name() { return ""; }
 		public final int rank() { return 0; }
 
-		public final int minimum() { return 4; }
-		public final int maximum() { return Integer.MAX_VALUE; }
 	}
 	// term $11<Bag($9<^[$2<^Type<$11|Atom<Not(^Proton<Any|Void|Bool|Int|Real|String>)|Proton<Any|Void|Bool|Int|Real|String>>|Or(^{$2...})|And(^{$2...})|Not($2)|Ref($2)|Meta($2)|Nominal(^[^string,$2])|Term(^[^string,$2...])|Set($9)|List(^[$2,^[$2...]])>>,^{|$2...|}[$2...]]>)>
 	public final static int K_Bag = 15;
@@ -1647,8 +1595,8 @@ public final class Types {
 
 		public Reduction_26(Pattern.Term pattern) { super(pattern); }
 
-		public final void probe(Automaton automaton, int root, List<Activation> activations) {
-			int r0 = root;
+		public final void probe(Automaton automaton, int target, List<Reduction.Activation> activations) {
+			int r0 = target;
 			Automaton.State s0 = automaton.get(r0);
 			if(s0.kind == K_Bag) {
 				Automaton.Term t0 = (Automaton.Term) s0;
@@ -1664,7 +1612,7 @@ public final class Types {
 						int r4 = c3.get(r5);
 						if(Runtime.accepts(type1,automaton,automaton.get(r4), SCHEMA)) {
 							int[] state = {r0, r1, r2, r3, r4, r5, 0};
-							activations.add(new Activation(this,null,state));
+							activations.add(new Reduction.Activation(this,null,state));
 						}
 					}
 				}
@@ -1697,8 +1645,6 @@ public final class Types {
 		public final String name() { return ""; }
 		public final int rank() { return 0; }
 
-		public final int minimum() { return 4; }
-		public final int maximum() { return Integer.MAX_VALUE; }
 	}
 	// term $11<List(^[$2<^Type<$11|Atom<Not(^Proton<Any|Void|Bool|Int|Real|String>)|Proton<Any|Void|Bool|Int|Real|String>>|Or(^{$2...})|And(^{$2...})|Not($2)|Ref($2)|Meta($2)|Nominal(^[^string,$2])|Term(^[^string,$2...])|Set(^[$2,^{|$2...|}[$2...]])|Bag(^[$2,^{|$2...|}[$2...]])>>,^[$2...]])>
 	public final static int K_List = 16;
@@ -1716,8 +1662,8 @@ public final class Types {
 
 		public Reduction_27(Pattern.Term pattern) { super(pattern); }
 
-		public final void probe(Automaton automaton, int root, List<Activation> activations) {
-			int r0 = root;
+		public final void probe(Automaton automaton, int target, List<Reduction.Activation> activations) {
+			int r0 = target;
 			Automaton.State s0 = automaton.get(r0);
 			if(s0.kind == K_List) {
 				Automaton.Term t0 = (Automaton.Term) s0;
@@ -1729,7 +1675,7 @@ public final class Types {
 				Automaton.State s3 = automaton.get(r3);
 				Automaton.List l3 = (Automaton.List) s3;
 				int[] state = {r0, r1, r2, r3, 0};
-				activations.add(new Activation(this,null,state));
+				activations.add(new Reduction.Activation(this,null,state));
 			}
 		}
 
@@ -1754,16 +1700,14 @@ public final class Types {
 		public final String name() { return ""; }
 		public final int rank() { return 0; }
 
-		public final int minimum() { return 0; }
-		public final int maximum() { return Integer.MAX_VALUE; }
 	}
 	// 
 	private final static class Reduction_28 extends AbstractRewriteRule implements ReductionRule {
 
 		public Reduction_28(Pattern.Term pattern) { super(pattern); }
 
-		public final void probe(Automaton automaton, int root, List<Activation> activations) {
-			int r0 = root;
+		public final void probe(Automaton automaton, int target, List<Reduction.Activation> activations) {
+			int r0 = target;
 			Automaton.State s0 = automaton.get(r0);
 			if(s0.kind == K_And) {
 				Automaton.Term t0 = (Automaton.Term) s0;
@@ -1778,7 +1722,7 @@ public final class Types {
 								if(r5 == r3) { continue; }
 								int r4 = c1.get(r5);
 								int[] state = {r0, r1, r2, r3, r4, r5, 0};
-								activations.add(new Activation(this,null,state));
+								activations.add(new Reduction.Activation(this,null,state));
 							}
 						}
 					}
@@ -1828,16 +1772,14 @@ public final class Types {
 		public final String name() { return ""; }
 		public final int rank() { return 0; }
 
-		public final int minimum() { return 0; }
-		public final int maximum() { return Integer.MAX_VALUE; }
 	}
 	// 
 	private final static class Reduction_29 extends AbstractRewriteRule implements ReductionRule {
 
 		public Reduction_29(Pattern.Term pattern) { super(pattern); }
 
-		public final void probe(Automaton automaton, int root, List<Activation> activations) {
-			int r0 = root;
+		public final void probe(Automaton automaton, int target, List<Reduction.Activation> activations) {
+			int r0 = target;
 			Automaton.State s0 = automaton.get(r0);
 			if(s0.kind == K_And) {
 				Automaton.Term t0 = (Automaton.Term) s0;
@@ -1873,7 +1815,7 @@ public final class Types {
 											Automaton.State s12 = automaton.get(r12);
 											Automaton.List l12 = (Automaton.List) s12;
 											int[] state = {r0, r1, r2, r3, r4, r5, r6, 0, r8, r9, r10, r11, r12, 0, 0};
-											activations.add(new Activation(this,null,state));
+											activations.add(new Reduction.Activation(this,null,state));
 										}
 									}
 								}
@@ -2005,8 +1947,6 @@ public final class Types {
 		public final String name() { return ""; }
 		public final int rank() { return 0; }
 
-		public final int minimum() { return 0; }
-		public final int maximum() { return Integer.MAX_VALUE; }
 	}
 	// =========================================================================
 	// Schema

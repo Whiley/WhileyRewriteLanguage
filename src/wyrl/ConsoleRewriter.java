@@ -25,6 +25,8 @@ import wyrw.util.*;
  */
 public class ConsoleRewriter {
 	
+	public enum RwMode { REDUCE, INFER };
+	
 	/**
 	 * Schema of rewrite system used in this session
 	 */
@@ -114,7 +116,8 @@ public class ConsoleRewriter {
 			this.new Command("collapse",getMethod("setCollapse",boolean.class)),
 			this.new Command("linear",getMethod("setLinear",boolean.class)),
 			this.new Command("log",getMethod("printLog")),
-			this.new Command("rewrite",getMethod("startRewrite",String.class)),
+			this.new Command("reduce",getMethod("startReduce",String.class)),
+			this.new Command("infer",getMethod("startInfer",String.class)),
 			this.new Command("load",getMethod("loadRewrite",String.class)),			
 			this.new Command("grind",getMethod("grind",int.class)),
 			this.new Command("apply",getMethod("applyActivation",int.class)),
@@ -140,12 +143,15 @@ public class ConsoleRewriter {
 		try {
 			Rewrite.State state = rewrite.states().get(HEAD); 
 			PrettyAutomataWriter writer = new PrettyAutomataWriter(System.out,schema,indents);
-			writer.setIndices(indices);			
-			writer.write(state.automaton());
+			writer.setIndices(indices);
+			// FIXME: this is clearly broken because it won't work for a
+			// reduction.
+			Automaton automaton = state.automaton();
+			writer.write(automaton.getRoot(HEAD),automaton);
 			writer.flush();
 			System.out.println("\n");
 			for(int i=0;i!=state.size();++i) {
-				Activation activation = state.activation(i);
+				AbstractActivation activation = state.activation(i);
 				System.out.print("[" + i + "] ");
 				print(activation,state.step(i));	
 				System.out.println();
@@ -154,14 +160,14 @@ public class ConsoleRewriter {
 		} catch(IOException e) { System.err.println("I/O error printing automaton"); }
 	}
 	
-	private void print(Activation activation, Rewrite.Step step) {
+	private void print(AbstractActivation activation, Rewrite.Step step) {
 		if(activation.rule() instanceof InferenceRule) {
 			System.out.print("* ");
 		}
 		if(activation.rule().name() != null) {
 			System.out.print(activation.rule().name());
 		}
-		System.out.print(" #" + activation.root());
+		System.out.print(" #" + activation.target());
 		if(step != null) {
 			System.out.print(" (" + step.after() + ")");
 		}
@@ -173,10 +179,10 @@ public class ConsoleRewriter {
 			System.out.print("[" + i + "] ");
 			Rewrite.Step step = history.get(i);			
 			int before = step.before();
-			Activation activation = rewrite.states().get(before).activation(step.activation());
+			AbstractActivation activation = rewrite.states().get(before).activation(step.activation());
 			int after = step.after();
 			System.out.print(before + " => " + after);			
-			System.out.println(" (" + activation.root() + ", " + activation.rule().name() + ")");
+			System.out.println(" (" + activation.target() + ", " + activation.rule().name() + ")");
 		}
 	}		
 	
@@ -202,44 +208,39 @@ public class ConsoleRewriter {
 	
 	public void loadRewrite(String input) throws Exception {
 		FileReader reader = new FileReader(input);
-		startRewrite(reader);
+		// THIS NEEDS TO BE FIXED!!
+		startRewrite(reader,RwMode.INFER);
 	}
 	
-	public void startRewrite(String input) throws Exception {
-		startRewrite(new StringReader(input));
+	public void startReduce(String input) throws Exception {
+		startRewrite(new StringReader(input),RwMode.REDUCE);
 	}
 	
-	public void startRewrite(Reader input) throws Exception {
+	public void startInfer(String input) throws Exception {
+		startRewrite(new StringReader(input),RwMode.INFER);
+	}
+	
+	public void startRewrite(Reader input, RwMode mode) throws Exception {
 		PrettyAutomataReader reader = new PrettyAutomataReader(input, schema);
 		Automaton automaton = reader.read();
-		rewrite = constructRewrite(schema,reductions,inferences);
+		rewrite = constructRewrite(schema,reductions,inferences,mode);
 		rewriter = constructRewriter(schema);
-		HEAD = rewriter.initialise(automaton);
+		HEAD = rewrite.initialise(automaton);
+		rewriter.reset(HEAD);
 		print();
 	}
 	
 	private Rewrite constructRewrite(final Schema schema, final ReductionRule[] reductions,
-			InferenceRule[] inferences) {
-		Rewrite rewrite;
-		RewriteRule[] rules = collapse ? inferences : append(reductions, inferences);
-		if (caching) {
-			rewrite = new GraphRewrite(schema, Activation.RANK_COMPARATOR, rules);
+			InferenceRule[] inferences, RwMode mode) {
+		if (mode == RwMode.INFER) {
+			return new Inference(schema, AbstractActivation.RANK_COMPARATOR, inferences, reductions);
 		} else {
-			rewrite = new TreeRewrite(schema, Activation.RANK_COMPARATOR, rules);
+			return new Reduction(schema, AbstractActivation.RANK_COMPARATOR, reductions);
 		}
-		return rewrite;
 	}
 	
 	private Rewriter constructRewriter(final Schema schema) {
-		Rewriter.Normaliser normaliser = Rewriter.SIMPLE_NORMALISER;
-		if(collapse) {
-			normaliser = new RewritingNormaliser(schema,normaliser,reductions);
-		}
-		if(linear) {
-			return new LinearRewriter(rewrite,normaliser);
-		} else {
-			return new BreadthFirstRewriter(rewrite,normaliser);
-		}
+		return new LinearRewriter(rewrite,LinearRewriter.UNFAIR_HEURISTIC);		
 	}
 	
 	private RewriteRule[] append(RewriteRule[] lhs, RewriteRule[] rhs) {
@@ -249,22 +250,9 @@ public class ConsoleRewriter {
 		return rules;
 	}
 	
-	public void applyActivation(int index) {
+	public void applyActivation(int activation) {
 		// Yes, there is at least one activation left to try
-		Rewrite.State state = rewrite.states().get(HEAD);
-		Automaton automaton = new Automaton(state.automaton());
-		Activation activation = state.activation(index);
-		if (activation.apply(automaton) != Automaton.K_VOID) {
-			// An actual step occurred
-			automaton.compact();
-			automaton.minimise();
-			int after = rewrite.add(automaton);
-			rewrite.add(new AbstractRewrite.Step(HEAD, after, index));
-			HEAD = after;
-		} else {
-			// invalidate this step
-			rewrite.add(new AbstractRewrite.Step(HEAD, HEAD, index));
-		}
+		HEAD = rewrite.step(HEAD, activation);		
 		print();
 	}
 	

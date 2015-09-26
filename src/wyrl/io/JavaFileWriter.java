@@ -141,10 +141,10 @@ public class JavaFileWriter {
 		myOut("import wyautl.io.*;");
 		myOut("import wyautl.core.*;");
 		myOut("import wyrw.core.*;");
+		myOut("import wyrw.util.AbstractRewriteRule;");
 		myOut("import wyrl.core.*;");
 		myOut("import wyrl.util.Runtime;");
 		myOut("import wyrl.util.Pair;");
-		myOut("import wyrl.util.AbstractRewriteRule;");
 		myOut();
 	}
 
@@ -272,11 +272,14 @@ public class JavaFileWriter {
 		// ===============================================
 		myOut();
 
-		myOut(2,
-				"public final void probe(Automaton automaton, int root, List<Activation> activations) {");
+		if (isReduction) {
+			myOut(2, "public final void probe(Automaton automaton, int target, List<Reduction.Activation> activations) {");
+		} else {
+			myOut(2, "public final void probe(Automaton automaton, int root, int target, List<Inference.Activation> activations) {");
+		}
 		Environment environment = new Environment();
 		int thus = environment.allocate(param, "this");
-		myOut(3, "int r" + thus + " = root;");
+		myOut(3, "int r" + thus + " = target;");
 		int level = translatePatternMatch(3, decl.pattern, null, thus,
 				environment);
 
@@ -299,7 +302,11 @@ public class JavaFileWriter {
 		}
 		out.println("};");
 
-		myOut(level, "activations.add(new Activation(this,null,state));");
+		if(isReduction) {
+			myOut(level, "activations.add(new Reduction.Activation(this,null,state));");
+		} else {
+			myOut(level, "activations.add(new Inference.Activation(this,root,null,state));");
+		}
 
 		// close the pattern match
 		while (level > 2) {
@@ -311,8 +318,11 @@ public class JavaFileWriter {
 		// ===============================================
 
 		myOut();
-		myOut(2,
-				"public final int apply(Automaton automaton, int[] state) {");
+		if (isReduction) {
+			myOut(2, "public final int apply(Automaton automaton, int[] state) {");
+		} else {
+			myOut(2, "public final int apply(Automaton automaton, int root, int[] state) {");
+		}
 		myOut(3, "int nStates = automaton.nStates();");
 
 		// first, unpack the state
@@ -342,12 +352,7 @@ public class JavaFileWriter {
 		// ===============================================
 
 		myOut();
-		//
-		int minComplexity = RewriteComplexity.minimumChange(decl);
-		myOut(2, "public final int minimum() { return " + minComplexity + "; }");
-		//myOut(2, "public final int minimum() { return 0; }");
-		myOut(2, "public final int maximum() { return Integer.MAX_VALUE; }");
-
+		//		
 		myOut(1, "}"); // end class
 	}
 
@@ -1047,7 +1052,11 @@ public class JavaFileWriter {
 		result = coerceFromValue(level, decl.result, result, environment);
 		int thus = environment.get("this");
 		myOut(level, "if(r" + thus + " != r" + result + ") {");
-		myOut(level + 1, "return automaton.rewrite(r" + thus + ", r" + result + ");");
+		if (isReduce) {
+			myOut(level + 1, "return automaton.rewrite(r" + thus + ", r" + result + ");");
+		} else {
+			myOut(level + 1, "return automaton.substitute(root,r" + thus + ", r" + result + ");");
+		}
 		myOut(level, "}");
 		if (decl.condition != null) {
 			myOut(--level, "}");
