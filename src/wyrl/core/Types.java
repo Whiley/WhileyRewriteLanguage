@@ -6,7 +6,7 @@ import java.math.BigInteger;
 import wyautl.util.BigRational;
 import wyautl.io.*;
 import wyautl.core.*;
-import wyautl.rw.*;
+import wyrw.core.*;
 import wyrl.core.*;
 import wyrl.util.Runtime;
 import wyrl.util.Pair;
@@ -2343,30 +2343,6 @@ public final class Types {
 	// =========================================================================
 
 	public static void main(String[] args) throws IOException {
-		try {
-			PrettyAutomataReader reader = new PrettyAutomataReader(System.in,SCHEMA);
-			PrettyAutomataWriter writer = new PrettyAutomataWriter(System.out,SCHEMA);
-			Automaton automaton = reader.read();
-			System.out.print("PARSED: ");
-			print(automaton);
-			IterativeRewriter.Strategy<InferenceRule> inferenceStrategy = new SimpleRewriteStrategy<InferenceRule>(automaton, inferences);
-			IterativeRewriter.Strategy<ReductionRule> reductionStrategy = new SimpleRewriteStrategy<ReductionRule>(automaton, reductions);
-			IterativeRewriter rw = new IterativeRewriter(automaton,inferenceStrategy, reductionStrategy, SCHEMA);
-			rw.apply();
-			System.out.print("REWROTE: ");
-			print(automaton);
-			System.out.println("\n\n=> (" + rw.getStats() + ")\n");
-		} catch(PrettyAutomataReader.SyntaxError ex) {
-			System.err.println(ex.getMessage());
-		}
-	}
-	
-	static void print(Automaton automaton) {
-		try {
-			PrettyAutomataWriter writer = new PrettyAutomataWriter(System.out,SCHEMA);
-			writer.write(automaton);
-			writer.flush();
-			System.out.println();
-		} catch(IOException e) { System.err.println("I/O error printing automaton"); }
+		new wyrl.ConsoleRewriter(SCHEMA,inferences,reductions).readEvaluatePrintLoop();
 	}
 }

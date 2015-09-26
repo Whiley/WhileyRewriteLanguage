@@ -23,24 +23,33 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-package wyrl.util;
+package wyrw.core;
 
-import wyautl.core.*;
-import wyrl.core.Pattern;
-import wyrw.core.RewriteRule;
+import wyautl.core.Automaton;
 
-public abstract class AbstractRewriteRule implements RewriteRule {
-
+/**
+ * Represents the (abstract) mechanism for controlling the rewriting of a given
+ * automaton under a given set of rules. Different implementation of this
+ * interface are possible, and will have different performance characteristics.
+ *
+ * @author David J. Pearce
+ *
+ */
+public interface Rewriter {
+	
 	/**
-	 * The pattern that this rewrite rule will match against.
+	 * Initialise the rewrite with a given automaton. This is done through the
+	 * rewriter to allow it the possibility to initialise state and/or update
+	 * the automaton in some way.
+	 * 
+	 * @param automaton
 	 */
-	private final Pattern.Term pattern;
-
-	public AbstractRewriteRule(Pattern.Term pattern) {
-		this.pattern = pattern;
-	}
-
-	public Pattern.Term pattern() {
-		return pattern;
-	}
+	public int initialise(Automaton automaton);
+	
+	/**
+	 * Request that the rewriter take a number of steps (upto a given maximum).
+	 *
+	 * @return
+	 */
+	public void apply(int maxSteps);		
 }

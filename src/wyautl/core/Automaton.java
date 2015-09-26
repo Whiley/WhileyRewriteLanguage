@@ -858,12 +858,13 @@ public final class Automaton {
 	/**
 	 * Determine the hashCode of an automaton.
 	 */
+	@Override
 	public int hashCode() {
-		int r = 0;
+		int r = nStates;
 		for (int i = 0; i != nStates; ++i) {
 			State ith = states[i];
 			if(ith != null) {
-				r = r + ith.hashCode();
+				r = r ^ ith.hashCode();
 			}
 		}
 		return r;
@@ -877,6 +878,7 @@ public final class Automaton {
 	 * whether two types are structurally isomorphic, using the
 	 * <code>equivalentTo(t1,t2)</code> and/or <code>isomorphicTo</code> methods.
 	 */
+	@Override
 	public boolean equals(Object o) {
 		if (o instanceof Automaton) {
 			Automaton a = (Automaton) o;
@@ -904,7 +906,7 @@ public final class Automaton {
 		}
 		return false;
 	}
-
+	
 	/**
 	 * Return a simple string representation of an automaton. Generally
 	 * speaking, this is only useful for debugging purposes. In order to get a
@@ -1044,6 +1046,7 @@ public final class Automaton {
 			}
 		}
 
+		@Override
 		public boolean equals(final Object o) {
 			if (o instanceof Term) {
 				Term t = (Term) o;
@@ -1052,8 +1055,9 @@ public final class Automaton {
 			return false;
 		}
 
+		@Override
 		public int hashCode() {
-			return contents * kind;
+			return contents ^ kind;
 		}
 
 		public String toString() {
@@ -1085,6 +1089,7 @@ public final class Automaton {
 			return false;
 		}
 
+		@Override
 		public boolean equals(final Object o) {
 			if (o instanceof Constant) {
 				Constant t = (Constant) o;
@@ -1097,8 +1102,9 @@ public final class Automaton {
 			return this;
 		}
 
+		@Override
 		public int hashCode() {
-			return value.hashCode() * kind;
+			return value.hashCode() ^ kind;
 		}
 
 		public String toString() {
@@ -1304,6 +1310,7 @@ public final class Automaton {
 			return false;
 		}
 
+		@Override
 		public boolean equals(final Object o) {
 			if (o instanceof Collection) {
 				Collection t = (Collection) o;
@@ -1320,6 +1327,7 @@ public final class Automaton {
 			return false;
 		}
 
+		@Override
 		public int hashCode() {
 			int hashCode = kind;
 			for (int i = 0; i != length; ++i) {

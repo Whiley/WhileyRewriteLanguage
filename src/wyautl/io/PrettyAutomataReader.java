@@ -33,15 +33,15 @@ import wyautl.core.*;
 import wyautl.util.BigRational;
 
 public class PrettyAutomataReader {
-	private final InputStream input;
+	private final Reader input;
 	private final int[] lookaheads;
 	private final Schema schema;
 	private final HashMap<String,Integer> rSchema;
 	private int start,end;
 	private int pos;
 
-	public PrettyAutomataReader(InputStream reader, Schema schema) {
-		this.input = reader;
+	public PrettyAutomataReader(InputStream input, Schema schema) {
+		this.input = new InputStreamReader(input);
 		this.schema = schema;
 		this.rSchema = new HashMap<String,Integer>();
 		for(int i=0;i!=schema.size();++i) {
@@ -50,6 +50,16 @@ public class PrettyAutomataReader {
 		this.lookaheads = new int[2];
 	}
 
+	public PrettyAutomataReader(Reader reader, Schema schema) {
+		this.input = reader;
+		this.schema = schema;
+		this.rSchema = new HashMap<String,Integer>();
+		for(int i=0;i!=schema.size();++i) {
+			rSchema.put(schema.get(i).name, i);
+		}
+		this.lookaheads = new int[2];
+	}
+	
 	public Automaton read() throws IOException,SyntaxError {
 		Automaton automaton = new Automaton();
 		int root = parseState(automaton);
