@@ -30,6 +30,7 @@ import java.util.*;
 import wyautl.core.*;
 import wyrw.core.Activation;
 import wyrw.core.Rewrite;
+import wyrw.core.Rewrite.State;
 import wyrw.core.RewriteRule;
 import wyrw.core.Rewriter;
 
@@ -41,11 +42,6 @@ import wyrw.core.Rewriter;
  * produces rewrites which form a single line (i.e. they are linear).
  * </p>
  * <p>
- * This rewriter is <i>fair</i> in that it makes an effort to ensure rules are
- * given equal opportunity to fire. Intuitively, this is to ensure rules are not
- * "starved" as this can prevent certain rewrites of interest from happening.
- * </p>
- * <p>
  * This rewriter is not particularly efficient as it creates a new state on
  * every rewrite. But, this does mean all intermediate states can be inspected.
  * </p>
@@ -53,19 +49,29 @@ import wyrw.core.Rewriter;
  * @author David J. Pearce
  *
  */
-public class FairLinearRewriter extends AbstractRewriter implements Rewriter {
+public class LinearRewriter extends AbstractRewriter implements Rewriter {
 	/**
 	 * The current state being rewritten by this rewriter.
 	 */
-	protected int current;
+	protected int HEAD;
 	
+	/**
+	 * The heuristic is responsible for choosing which activation to apply. This
+	 * can affect overall performance.
+	 */
+	protected Heuristic heuristic;
+
 	/**
 	 * Provides the activation index into the current state which we're
 	 * considering.
 	 */
 	protected int index;
+
+	public LinearRewriter(Rewrite rewrite) {
+		this(rewrite,new UnfairHeuristic());
+	}
 	
-	public FairLinearRewriter(Rewrite rewrite) {
+	public LinearRewriter(Rewrite rewrite, Heuristic heuristic) {
 		super(rewrite);
 	}
 
@@ -74,19 +80,19 @@ public class FairLinearRewriter extends AbstractRewriter implements Rewriter {
 		int count = 0;
 		List<Rewrite.State> states = rewrite.states();
 		while (count < maxSteps) {
-			Rewrite.State state = states.get(current);
-			int next = select(state);
+			Rewrite.State state = states.get(HEAD);
+			int next = heuristic.select(state);
 			if (next != -1) {
 				// Yes, there is at least one activation left to try
 				Automaton automaton = new Automaton(state.automaton());
 				Activation activation = state.activation(next);
-				if(rewrite(automaton,activation)) {
+				if (rewrite(automaton, activation)) {
 					// An actual step occurred
-					current = step(current, automaton, next);
+					HEAD = step(HEAD, automaton, next);
 					count = count + 1;
 				} else {
 					// loop back
-					invalidate(current, next);
+					invalidate(HEAD, next);
 				}
 			} else {
 				// There are no activations left to try so we are done.
@@ -97,23 +103,36 @@ public class FairLinearRewriter extends AbstractRewriter implements Rewriter {
 
 	@Override
 	public int initialise(Automaton automaton) {
-		current = rewrite.add(automaton);
-		return current;
-	}		
-	
-	private int select(Rewrite.State state) {
-		if(state.rank() == 0) {
-			return -1;
-		} else {
-			// Following loop guaranteed to terminate because rank is non-zero.
-			while (true) {
-				index = (index + 1) % state.size();
-				if (state.step(index) == null) {
-					return index;
-				}				
-			}
-			
-		}
+		HEAD = rewrite.add(automaton);
+		return HEAD;
 	}
-	
+
+	/**
+	 * Responsible for choosing the next activation to apply. Since there are
+	 * quite a few different approaches which can be taken, this is an interface
+	 * which different algorithms can implement.
+	 * 
+	 * @author David J. Pearce
+	 *
+	 */
+	public static interface Heuristic {
+		public int select(Rewrite.State state);
+	}
+
+	/**
+	 * The most basic of selection heuristics which simply chooses the next
+	 * available activation to apply. In this sense, it is "unfair" because it
+	 * can lead to certain activations being "starved".
+	 * 
+	 * @author David J. Pearce
+	 *
+	 */
+	public static class UnfairHeuristic implements Heuristic {
+
+		@Override
+		public int select(State state) {
+			return state.select();
+		}
+
+	}
 }
