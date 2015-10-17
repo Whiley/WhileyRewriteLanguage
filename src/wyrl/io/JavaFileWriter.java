@@ -52,6 +52,7 @@ import static wyrl.core.SpecFile.*;
  *
  */
 public class JavaFileWriter {
+	
 	private PrintWriter out;
 	private final HashMap<String, Type.Term> terms = new HashMap<String, Type.Term>();
 
@@ -1052,7 +1053,7 @@ public class JavaFileWriter {
 		result = coerceFromValue(level, decl.result, result, environment);
 		int thus = environment.get("this");
 		myOut(level, "if(r" + thus + " != r" + result + ") {");
-		if (isReduce) {
+		if (isReduce || !wyrw.core.Inference.USE_SUBSTITUTION) {
 			myOut(level + 1, "return automaton.rewrite(r" + thus + ", r" + result + ");");
 		} else {
 			myOut(level + 1, "return automaton.substitute(root,r" + thus + ", r" + result + ");");

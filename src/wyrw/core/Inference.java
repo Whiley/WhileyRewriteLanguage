@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.BitSet;
 import java.util.Comparator;
+import java.util.HashMap;
 
 import wyautl.core.Automata;
 import wyautl.core.Automaton;
@@ -15,25 +16,38 @@ import wyrw.util.AbstractRewrite.State;
 import wyrw.util.AbstractRewrite.Step;
 
 public class Inference extends AbstractRewrite {
+	/**
+	 * This represents an experimental new mode where inference rules are
+	 * implemented using substitution rather than as actual rewrites. The goal
+	 * of this is to avoid problems related to isomorphic automata. At this
+	 * stage, all this new mode functions correctly, it does reduce overall
+	 * performance and it remains unclear whether or not isomorphic automata are
+	 * actually a problem in practice.
+	 */
+	public static final boolean USE_SUBSTITUTION = false;
+	
 	private final int MAX_REDUCTIONS = 10000;
+		
+	private final HashMap<Automaton,Integer> cache;
 	
 	private final InferenceRule[] inferences;
 	
 	private final ReductionRule[] reductions;
-	
-	private Automaton automaton;
 	
 	public Inference(Schema schema, Comparator<AbstractActivation> comparator, InferenceRule[] inferences,
 			ReductionRule[] reductions) {
 		super(schema, comparator);
 		this.inferences = inferences;
 		this.reductions = reductions;
-		
+		if(USE_SUBSTITUTION) {
+			cache = null;
+		} else {
+			cache = new HashMap<Automaton,Integer>();
+		}
 	}
 
 	@Override
 	public int initialise(Automaton automaton) {
-		this.automaton = automaton;
 		Reductions.minimiseAndReduce(automaton,MAX_REDUCTIONS,reductions,comparator);		
 		states.add(probeReachableInferences(automaton,0));
 		return states.size()-1;
@@ -41,8 +55,15 @@ public class Inference extends AbstractRewrite {
 	
 	@Override
 	public int step(int from, int activation) {		
-		State state = states.get(from);					
-		int pivot = automaton.nStates();		
+		State state = states.get(from);	
+		Automaton automaton = state.automaton();
+		int pivot;
+		if(!USE_SUBSTITUTION) {
+			automaton = new Automaton(automaton);
+			pivot = 0;
+		} else {			
+			pivot = automaton.nStates();
+		}
 		Activation a = (Activation) state.activation(activation);
 		int nRoot = a.apply(automaton);		
 		int to;
@@ -68,20 +89,38 @@ public class Inference extends AbstractRewrite {
 	}
 	
 	private State probeReachableInferences(Automaton automaton, int root) {
-		int rootState = automaton.getRoot(root);
-		int[] reachable = new int[automaton.nStates()];
-		Automata.traverse(automaton,rootState,reachable);
-		
 		ArrayList<Activation> activations = new ArrayList<Activation>();
-		for (int s = 0; s != automaton.nStates(); ++s) {
-			if (reachable[s] != 0) {
+		if(USE_SUBSTITUTION) {
+			int rootState = automaton.getRoot(root);
+			int[] reachable = new int[automaton.nStates()];
+			Automata.traverse(automaton,rootState,reachable);
+
+			for (int s = 0; s != automaton.nStates(); ++s) {
+				if (reachable[s] != 0) {
+					// State is reachable from the given root
+					Automaton.State state = automaton.get(s);
+					// Check whether this state is a term or not; that's because
+					// only terms can be roots for rewrite rule applications.
+					if (state instanceof Automaton.Term) {
+						for (int r = 0; r != inferences.length; ++r) {
+							inferences[r].probe(automaton, rootState, s, activations);
+						}
+					}
+				}
+			}
+		} else {
+			// This is a legacy mode of operation, which is left here because it
+			// does currently offer better performance. The goal is to
+			// sufficiently improve performance for the substitution case,
+			// thereby rendering this case unnecessary.
+			for (int s = 0; s != automaton.nStates(); ++s) {
 				// State is reachable from the given root
 				Automaton.State state = automaton.get(s);
 				// Check whether this state is a term or not; that's because
 				// only terms can be roots for rewrite rule applications.
 				if (state instanceof Automaton.Term) {
 					for (int r = 0; r != inferences.length; ++r) {
-						inferences[r].probe(automaton, rootState, s, activations);
+						inferences[r].probe(automaton, 0, s, activations);
 					}
 				}
 			}
@@ -119,14 +158,26 @@ public class Inference extends AbstractRewrite {
 	 * @return
 	 */
 	private int addState(Automaton automaton, int root) {
-		for(int i = 0;i!=automaton.nRoots();++i) {
-			if(automaton.getRoot(i) == root) {
+		if(USE_SUBSTITUTION) {
+			for(int i = 0;i!=automaton.nRoots();++i) {
+				if(automaton.getRoot(i) == root) {
+					// Matching state found
+					return i;
+				}
+			}
+			// No match found, so create a new state
+			return automaton.push(root);
+		} else {
+			Integer i = cache.get(automaton);
+			if(i != null) {
 				// Matching state found
 				return i;
+			} else {
+				// Create new state!
+				cache.put(automaton,states.size());
+				return states.size();
 			}
 		}
-		// No match found, so create a new state
-		return automaton.push(root);
 	}
 	
 	public static class Activation extends AbstractActivation {
