@@ -33,46 +33,51 @@ import wyautl.core.Automaton;
 import wyrw.core.Rewrite;
 import wyrw.core.Rewriter;
 
-public class BreadthFirstRewriter extends AbstractRewriter implements Rewriter {
+public class BreadthFirstRewriter implements Rewriter {
 	private final HashSet<Integer> visited = new HashSet<Integer>();
 	private ArrayList<Integer> frontier = new ArrayList<Integer>();
+	
+	/**
+	 * The rewrite onto which this rewriter is being applied.
+	 */
+	protected final Rewrite rewrite;
+	
+	/**
+	 * Provides the statue in the frontier we're currently considering.
+	 */
 	private int index;
 	
 	public BreadthFirstRewriter(Rewrite rewrite) {
-		super(rewrite);
+		this.rewrite = rewrite;
 	}
 
+	@Override 
+	public void reset(int state) {
+		frontier.clear();
+		visited.clear();
+		frontier.add(state);
+		visited.add(state);
+		index = 0;
+	}
+	
 	@Override
 	public void apply(int count) {
 		while(count > 0 && step()) {
 			count = count - 1;
 		}
 	}
-
-	@Override
-	public int initialise(Automaton automaton) {
-		int state = rewrite.add(automaton);		
-		frontier.add(state);
-		visited.add(state);
-		index = 0;
-		return state;
-	}	
-	
+		
 	private boolean step() {
 		List<Rewrite.State> states = rewrite.states();
 		while (frontier.size() > 0) {			
 			while (index < frontier.size()) {
 				int before = frontier.get(index);
 				Rewrite.State state = states.get(before);
-				int activation = state.select();
-				if (activation != -1) {
-					Automaton automaton = new Automaton(state.automaton());
-					if (rewrite(automaton, state.activation(activation))) {
-						step(before, automaton, activation);
-						return true;
-					} else {
-						invalidate(before, activation);
-					}					
+				int next = state.select();
+				if (next != -1) {
+					// Yes, there is at least one activation left to try
+					rewrite.step(before, next);
+					return true;
 				} else {
 					index = index + 1;
 				}
@@ -104,5 +109,5 @@ public class BreadthFirstRewriter extends AbstractRewriter implements Rewriter {
 
 		}		
 		frontier = nFrontier;	
-	}
+	}	
 }

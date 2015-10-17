@@ -33,21 +33,15 @@ import java.util.List;
 
 import wyautl.core.Automaton;
 import wyautl.core.Schema;
-import wyrw.core.Activation;
 import wyrw.core.Rewrite;
 import wyrw.core.RewriteRule;
 
-public class AbstractRewrite implements Rewrite {
+public abstract class AbstractRewrite implements Rewrite {
 	/**
 	 * The schema used by automata being reduced. This is primarily useful for
 	 * debugging purposes.
 	 */
 	protected final Schema schema;
-	
-	/**
-	 * The list of rewrite rules which the rewriter can apply.
-	 */
-	protected final RewriteRule[] rules;
 	
 	/**
 	 * The list of states in the rewrite.
@@ -64,12 +58,11 @@ public class AbstractRewrite implements Rewrite {
 	 * Used to sort activations generated for a given state. This allows for
 	 * some heuristics which reduce the amount of rewriting required.
 	 */
-	protected final Comparator<Activation> comparator;
+	protected final Comparator<AbstractActivation> comparator;
 
-	public AbstractRewrite(Schema schema, Comparator<Activation> comparator,
+	public AbstractRewrite(Schema schema, Comparator<AbstractActivation> comparator,
 			RewriteRule... rules) {
 		this.schema = schema;
-		this.rules = rules;
 		this.comparator = comparator;
 	}
 	
@@ -85,59 +78,27 @@ public class AbstractRewrite implements Rewrite {
 	}
 
 	@Override
-	public int add(Automaton automaton) {
-		int index = states.size();
-		states.add(initialise(automaton));
-		return index;
-	}
-
-	@Override
-	public int add(Rewrite.Step step) {
-		int index = steps.size();
-		steps.add(step);
-		State state = states.get(step.before());
-		state.update(step.activation(),step);
-		return index;
-	}	
-	
-	private State initialise(Automaton automaton) {
-		ArrayList<Activation> activations = new ArrayList<Activation>();
-		for (int s = 0; s != automaton.nStates(); ++s) {
-			Automaton.State state = automaton.get(s);
-			// Check whether this state is a term or not; that's because only
-			// terms can be roots for rewrite rule applications.
-			if (state instanceof Automaton.Term) {
-				for (int r = 0; r != rules.length; ++r) {
-					rules[r].probe(automaton, s, activations);
-				}
-			}
-		}
-		Activation[] array = activations.toArray(new Activation[activations.size()]);
-		if (comparator != null) {
-			Arrays.sort(array, comparator);
-		}
-		return new State(automaton, array);
-	}
+	public abstract int step(int from, int activation);
 	
 	public class State implements Rewrite.State {
 		/**
 		 * The automaton which this state represents.
 		 */
-		private final Automaton automaton;
+		protected final Automaton automaton;
 
 		/**
 		 * The array of all possible activations on the given automaton.
 		 */
-		private final Activation[] activations;
+		protected final AbstractActivation[] activations;
 
 		/**
 		 * The array of possible steps from this automaton. Each entry matches
 		 * the corresponding entry in the activations array. Entries maybe null
 		 * to signal steps which have not yet been explored.
 		 */
-		private final Rewrite.Step[] steps;
+		public final Rewrite.Step[] steps;
 
-		public State(Automaton automaton, Activation... activations) {
+		public State(Automaton automaton, AbstractActivation... activations) {
 			this.automaton = automaton;
 			this.activations = activations;
 			this.steps = new Rewrite.Step[activations.length];
@@ -161,7 +122,7 @@ public class AbstractRewrite implements Rewrite {
 			return automaton;
 		}
 
-		public Activation activation(int index) {
+		public AbstractActivation activation(int index) {
 			return activations[index];
 		}
 

@@ -23,12 +23,16 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-package wyrw.core;
+package wyrw.util;
 
 import java.util.BitSet;
 import java.util.Comparator;
 
 import wyautl.core.Automaton;
+import wyrw.core.InferenceRule;
+import wyrw.core.ReductionRule;
+import wyrw.core.Rewrite;
+import wyrw.core.RewriteRule;
 
 /**
  * Represents the potential activation of a given rewrite rule. An activation
@@ -40,40 +44,39 @@ import wyautl.core.Automaton;
  * @author David J. Pearce
  *
  */
-public final class Activation {
-
-	/**
-	 * The rewrite rule that this activation will apply.
-	 */
-	final RewriteRule rule;
+public abstract class AbstractActivation implements Rewrite.Activation {
 
 	/**
 	 * The complete set of states upon which this activation depends. This must
 	 * include all those identified in the mapping.
 	 */
-	private final BitSet dependencies;
-
+	protected final BitSet dependencies;
+	
 	/**
 	 * Temporary state used by the rule to control the rewrite. For example,
 	 * this might match rewrite variables with states. In essence, the state is
 	 * a continuation which gives enough information for the rewrite to pick up
 	 * immediately from where it got to during probing.
 	 */
-	private final int[] state;
+	protected final int[] state;
 
-	public Activation(RewriteRule rule, BitSet dependencies, int[] state) {		
-		this.rule = rule;
+	public AbstractActivation(BitSet dependencies, int[] state) {		
 		this.dependencies = dependencies;
 		this.state = state;
 	}
 
-	public int root() {
+	/**
+	 * Return the target of this activation. That is the automaton state
+	 * potentially being rewritten by this activation.
+	 * 
+	 * @return
+	 */
+	@Override
+	public int target() {
 		return state[0];
 	}
-	
-	public RewriteRule rule() {
-		return rule;
-	}
+
+	public abstract RewriteRule rule();
 
 	public int[] binding() {
 		return state;
@@ -107,9 +110,7 @@ public final class Activation {
 	 *
 	 * @return The state that was rewriten to, or K_VOID is no such state.
 	 */
-	public int apply(Automaton automaton) {
-		return rule.apply(automaton, state);
-	}
+	public abstract int apply(Automaton automaton);
 	
 	/**
 	 * Constant comparator for use with rewriters.
@@ -120,14 +121,14 @@ public final class Activation {
 	 * A simple comparator for comparing activations based primarily on rule
 	 * rank.
 	 *
-	 * @param <Activation>
+	 * @param <AbstractActivation>
 	 */
-	public static final class RankComparator implements Comparator<Activation> {
+	public static final class RankComparator implements Comparator<AbstractActivation> {
 
 		@Override
-		public int compare(Activation a1, Activation a2) {
-			final RewriteRule r1 = a1.rule;
-			final RewriteRule r2 = a2.rule;
+		public int compare(AbstractActivation a1, AbstractActivation a2) {
+			final RewriteRule r1 = a1.rule();
+			final RewriteRule r2 = a2.rule();
 			
 			// First, stratify based on rule class
 			if (r1 instanceof ReductionRule && r2 instanceof InferenceRule) {
@@ -147,8 +148,8 @@ public final class Activation {
 			} 
 			
 			// ===============================			
-			final int a1_root = a1.root();
-			final int a2_root = a2.root();
+			final int a1_root = a1.target();
+			final int a2_root = a2.target();
 			
 			if(a1_root < a2_root) {
 				return -1;
