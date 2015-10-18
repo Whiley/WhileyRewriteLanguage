@@ -266,7 +266,10 @@ public class JavaFileWriter {
 		// Constructor
 		// ===============================================
 		myOut();
-		myOut(2,"public " + className + "(Pattern.Term pattern) { super(pattern); }");
+		myOut(2,"public " + className + "(Pattern.Term pattern) {");
+		myOut(3,"super(pattern);");
+		writeAnnotations(3,decl.annotations);
+		myOut(2,"}");
 
 		// ===============================================
 		// probe()
@@ -342,21 +345,38 @@ public class JavaFileWriter {
 		myOut(2, "}");
 
 		// ===============================================
-		// name() and rank()
+		// annotations
 		// ===============================================
 
 		myOut(2, "public final String name() { return \"" + decl.name + "\"; }");
 		myOut(2, "public final int rank() { return " + decl.rank + "; }");
-
-		// ===============================================
-		// min / max reduction sizes
-		// ===============================================
 
 		myOut();
 		//		
 		myOut(1, "}"); // end class
 	}
 
+	protected void writeAnnotations(int level, Map<String,Object> annotations) {
+		for(Map.Entry<String, Object> e : annotations.entrySet()) {
+			String annotation = annotation2String(e.getValue());
+			myOut(level,"put(\"" + e.getKey() +"\"," + annotation + ");");
+		}
+	}
+	
+	protected String annotation2String(Object o) {
+		if(o == null) {
+			return "null";
+		} else if(o instanceof BigInteger) {
+			BigInteger i = (BigInteger) o;
+			return i.toString();
+		} else if(o instanceof String) {
+			String s = (String) o;
+			return "\"" + s + "\"";
+		} else {
+			throw new IllegalArgumentException("Unsupported annotation kind: " + o.getClass().getName());
+		}
+	}
+	
 	/**
 	 * Translate the test to see whether a pattern is accepted or not. A key
 	 * requirement of this translation procedure is that it does not allocate

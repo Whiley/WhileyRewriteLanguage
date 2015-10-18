@@ -27,6 +27,7 @@ package wyrw.core;
 
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 
 import wyautl.core.Automaton;
 import wyrl.core.Pattern;
@@ -59,6 +60,17 @@ public interface RewriteRule {
 	 * @return
 	 */
 	public Pattern.Term pattern();
+	
+	/**
+	 * Get the annotations associated with this rewrite rule. Annotations are
+	 * used-supplied fields that provide some kind of supplementary information.
+	 * For example, one could use a "@Name" annotation to give each rule a
+	 * unique name.  Similarly, one can provide a description for each rule.
+	 * 
+	 * @param name
+	 * @return
+	 */
+	public Map<String,Object> annotations();
 	
 	/**
 	 * A standard comparator for comparing rewrite rules based on their rank.

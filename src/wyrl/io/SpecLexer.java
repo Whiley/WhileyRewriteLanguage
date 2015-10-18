@@ -76,6 +76,8 @@ public class SpecLexer {
 				tokens.add(scanOperator());
 			} else if(isIdentifierStart(c)) {
 				tokens.add(scanIdentifier());
+			} else if(c == '@') {
+				tokens.add(scanAttribute());
 			} else if(c == '\n') {
 				tokens.add(new NewLine(pos++));
 			} else if(c == '\t') {
@@ -504,6 +506,17 @@ public class SpecLexer {
 		return new Identifier(text,start);
 	}
 
+	public Token scanAttribute() {
+		int start = pos;
+		pos = pos + 1; // skip '@'
+		while (pos < input.length() &&
+				Character.isJavaIdentifierPart(input.charAt(pos))) {
+			pos++;
+		}
+		String text = input.substring(start,pos);
+		return new AtIdentifier(text,start);
+	}
+	
 	public Token scanTabs() {
 		int start = pos;
 		int ntabs = 0;
@@ -578,6 +591,9 @@ public class SpecLexer {
 	}
 	public static class Keyword extends Token {
 		public Keyword(String text, int pos) { super(text,pos); }
+	}
+	public static class AtIdentifier extends Token {
+		public AtIdentifier(String text, int pos) { super(text,pos); }
 	}
 	public static class NewLine extends Token {
 		public NewLine(int pos) { super("\n",pos); }

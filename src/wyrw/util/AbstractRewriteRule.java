@@ -25,22 +25,37 @@
 
 package wyrw.util;
 
+import java.util.*;
+
 import wyautl.core.*;
 import wyrl.core.Pattern;
 import wyrw.core.RewriteRule;
 
 public abstract class AbstractRewriteRule implements RewriteRule {
-
+	
 	/**
 	 * The pattern that this rewrite rule will match against.
 	 */
 	private final Pattern.Term pattern;
 
+	/**
+	 * The annotations associated with this rule (if any).
+	 */
+	private final Map<String,Object> annotations = new HashMap<String,Object>();
+	
 	public AbstractRewriteRule(Pattern.Term pattern) {
 		this.pattern = pattern;
 	}
 
 	public Pattern.Term pattern() {
 		return pattern;
+	}
+	
+	public Map<String,Object> annotations() {
+		return annotations;
+	}
+	
+	protected void put(String annotation, Object value) {
+		annotations.put(annotation, value);
 	}
 }

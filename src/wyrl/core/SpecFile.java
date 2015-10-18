@@ -56,38 +56,46 @@ public class SpecFile {
 		}
 	}
 
-	public static class TermDecl extends SyntacticElement.Impl implements Decl {
+	public static class AnnotableDecl extends SyntacticElement.Impl implements Decl {
+		public final Map<String,Object> annotations;
+		
+		public AnnotableDecl(Map<String,Object> annotations, Attribute... attributes) {
+			super(attributes);
+			this.annotations = new HashMap<String,Object>(annotations);
+		}
+	}
+	
+	public static class TermDecl extends AnnotableDecl {		
 		public Type.Term type;
 
-		public TermDecl(Type.Term data, Attribute... attributes) {
-			super(attributes);
+		public TermDecl(Type.Term data, Map<String,Object> annotations, Attribute... attributes) {
+			super(annotations,attributes);
 			this.type = data;
 		}
 	}
 
-	public static class TypeDecl extends SyntacticElement.Impl implements Decl {
+	public static class TypeDecl extends AnnotableDecl {
 		public final String name;
 		public final Type type;
 		public final boolean isOpen;
 
-		public TypeDecl(String n, Type type, boolean isOpen, Attribute... attributes) {
-			super(attributes);
+		public TypeDecl(String n, Type type, boolean isOpen, Map<String,Object> annotations, Attribute... attributes) {
+			super(annotations,attributes);
 			this.name = n;
 			this.type = type;
 			this.isOpen = isOpen;
 		}
 	}
 
-	public static abstract class RewriteDecl extends SyntacticElement.Impl implements
-			Decl {
+	public static abstract class RewriteDecl extends AnnotableDecl {
 		public Pattern.Term pattern;
 		public final ArrayList<RuleDecl> rules;
 		public final String name;
 		public final int rank;
 
 		public RewriteDecl(Pattern.Term pattern, Collection<RuleDecl> rules,
-				String name, int rank, Attribute... attributes) {
-			super(attributes);
+				String name, int rank, Map<String,Object> annotations, Attribute... attributes) {
+			super(annotations, attributes);
 			this.pattern = pattern;
 			this.rules = new ArrayList<RuleDecl>(rules);
 			this.name = name;
@@ -97,15 +105,15 @@ public class SpecFile {
 
 	public static class ReduceDecl extends RewriteDecl {
 		public ReduceDecl(Pattern.Term pattern, Collection<RuleDecl> rules,
-				String name, int rank, Attribute... attributes) {
-			super(pattern,rules,name,rank,attributes);
+				String name, int rank, Map<String,Object> annotations, Attribute... attributes) {
+			super(pattern,rules,name,rank,annotations,attributes);
 		}
 	}
 
 	public static class InferDecl extends RewriteDecl {
 		public InferDecl(Pattern.Term pattern, Collection<RuleDecl> rules,
-				String name, int rank, Attribute... attributes) {
-			super(pattern,rules,name,rank, attributes);
+				String name, int rank, Map<String,Object> annotations, Attribute... attributes) {
+			super(pattern,rules,name,rank,annotations,attributes);
 		}
 	}
 
