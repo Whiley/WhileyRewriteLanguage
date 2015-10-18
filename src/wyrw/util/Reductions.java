@@ -19,7 +19,7 @@ public class Reductions {
 			Comparator<AbstractActivation> comparator) {
 		automaton.minimise();
 		automaton.compact(0);
-		reduceOver(automaton, 0,maxSteps, reductions, comparator);
+		reduceOver(automaton, 0, maxSteps, reductions, comparator);
 	}
 	
 	public static void reduceOver(Automaton automaton, int start, int maxSteps, ReductionRule... reductions) {
@@ -39,8 +39,6 @@ public class Reductions {
 			Comparator<AbstractActivation> comparator) {
 		// Now, attempt to reduce as much as possible
 		boolean changed = true;
-		nProbes = 0;
-		int nApplied = 0;
 		while (changed && maxSteps-- > 0) {
 			changed = false;
 			AbstractActivation[] activations = probe(automaton, start, reductions, comparator);
@@ -53,7 +51,6 @@ public class Reductions {
 					// Rewrite applied
 					//automaton.minimise();					
 					automaton.compact(0);
-					nApplied++;
 					changed = true;
 					break;
 				} else {
@@ -61,10 +58,7 @@ public class Reductions {
 				}
 			}
 		}
-		//System.out.println("REDUCTION ACTIVATIONS = " + nApplied + " / " + nProbes);		
 	}
-	
-	static int nProbes;
 	
 	private static AbstractActivation[] probe(Automaton automaton, int start, ReductionRule[] reductions,
 			Comparator<AbstractActivation> comparator) {
@@ -78,7 +72,6 @@ public class Reductions {
 			if (state instanceof Automaton.Term) {
 				for (int r = 0; r != reductions.length; ++r) {
 					reductions[r].probe(automaton, s, activations);
-					nProbes++;
 				}
 			}
 		}

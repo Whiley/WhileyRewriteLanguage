@@ -57,17 +57,18 @@ public class Inference extends AbstractRewrite {
 	public int step(int from, int activation) {		
 		State state = states.get(from);	
 		Automaton automaton = state.automaton();
-		int pivot;
-		if(!USE_SUBSTITUTION) {
-			automaton = new Automaton(automaton);
-			pivot = 0;
-		} else {			
-			pivot = automaton.nStates();
-		}
 		Activation a = (Activation) state.activation(activation);
+		int target;
+		int pivot = automaton.nStates();
+		if(USE_SUBSTITUTION) {
+			target = a.root();
+		} else {
+			automaton = new Automaton(automaton);
+			target = a.target();
+		} 
 		int nRoot = a.apply(automaton);		
 		int to;
-		if (nRoot != Automaton.K_VOID && nRoot != a.root()) {			
+		if (nRoot != Automaton.K_VOID && nRoot != target) {
 			// Rule application produced an updated automaton. Therefore, we now
 			// want to reduce the automaton whilst preserving the root
 			to = addState(automaton,reduce(automaton,pivot,nRoot));
@@ -142,11 +143,18 @@ public class Inference extends AbstractRewrite {
 	 * @return
 	 */
 	private int reduce(Automaton automaton, int start, int root) {
-		automaton.push(root);
-		automaton.minimise();
-		automaton.compact(0);
-		Reductions.reduceOver(automaton, start, MAX_REDUCTIONS, reductions, comparator);		
-		return automaton.pop();		
+		if(USE_SUBSTITUTION) {
+			automaton.push(root);
+			automaton.minimise();
+			automaton.compact(0);
+			Reductions.reduceOver(automaton, start, MAX_REDUCTIONS, reductions, comparator);
+			return automaton.pop();
+		} else {
+			//automaton.minimise();
+			automaton.compact(0);
+			Reductions.reduceOver(automaton, 0, MAX_REDUCTIONS, reductions, comparator);
+			return Integer.MIN_VALUE; // to ensure this isn't used
+		}
 	}
 	
 	/**
