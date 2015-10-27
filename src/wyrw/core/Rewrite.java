@@ -144,6 +144,8 @@ public interface Rewrite {
 		
 		public int target();
 		
+		public int[] binding();
+		
 		public int apply(Automaton automaton);
 	}
 }

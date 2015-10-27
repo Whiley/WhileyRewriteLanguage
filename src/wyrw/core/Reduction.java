@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.BitSet;
 import java.util.Comparator;
+import java.util.HashMap;
 
 import wyautl.core.Automaton;
 import wyautl.core.Schema;
@@ -16,10 +17,13 @@ public class Reduction extends AbstractRewrite {
 
 	private final ReductionRule[] reductions;
 	
+	private final HashMap<Automaton,Integer> cache;
+	
 	public Reduction(Schema schema, Comparator<AbstractActivation> comparator,
 			ReductionRule[] reductions) {
 		super(schema, comparator);
-		this.reductions = reductions;		
+		this.reductions = reductions;
+		cache = new HashMap<Automaton,Integer>();
 	}
 
 	public int initialise(Automaton automaton) {
@@ -38,9 +42,10 @@ public class Reduction extends AbstractRewrite {
 			// Rule application produced an updated automaton
 			automaton.minimise(); // needed?
 			automaton.compact(0);
-			State newState = probe(automaton);
-			to = states.size();
-			states.add(newState);			
+			to = addState(automaton);
+			if(to >= states.size()) {
+				states.add(probe(automaton));
+			}
 		} else {
 			// Rule application had no effect
 			to = from;
@@ -51,6 +56,18 @@ public class Reduction extends AbstractRewrite {
 		return to;
 	}
 
+	private int addState(Automaton automaton) {
+		Integer i = cache.get(automaton);
+		if(i != null) {
+			// Matching state found
+			return i;
+		} else {
+			// Create new state!
+			cache.put(automaton,states.size());
+			return states.size();
+		}
+	}
+	
 	private State probe(Automaton automaton) {
 		ArrayList<Reduction.Activation> activations = new ArrayList<Reduction.Activation>();
 		for (int s = 0; s != automaton.nStates(); ++s) {
