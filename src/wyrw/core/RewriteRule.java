@@ -27,28 +27,12 @@ package wyrw.core;
 
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 
 import wyautl.core.Automaton;
 import wyrl.core.Pattern;
 
 public interface RewriteRule {
-
-	/**
-	 * Get the name associated with this rule. This has no semantic meaning, but
-	 * is useful for debugging and constructing a proof tree.
-	 *
-	 * @return
-	 */
-	public String name();
-
-	/**
-	 * Return the rank associated with this rewrite rule. This is a measure of
-	 * how this rule should be prioritised during rewriting, with zero being
-	 * the highest priority.
-	 *
-	 * @return
-	 */
-	public int rank();
 
 	/**
 	 * Get the pattern object that describes what this rule will match against.
@@ -61,25 +45,24 @@ public interface RewriteRule {
 	public Pattern.Term pattern();
 	
 	/**
-	 * A standard comparator for comparing rewrite rules based on their rank.
-	 *
-	 * @author David J. Pearce
-	 *
+	 * Get the annotations associated with this rewrite rule. Annotations are
+	 * used-supplied fields that provide some kind of supplementary information.
+	 * For example, one could use a "@Name" annotation to give each rule a
+	 * unique name.  Similarly, one can provide a description for each rule.
+	 * 
+	 * @param name
+	 * @return
 	 */
-	public static final class RankComparator
-			implements Comparator<RewriteRule> {
-
-		@Override
-		public int compare(RewriteRule o1, RewriteRule o2) {
-			int r1_rank = o1.rank();
-			int r2_rank = o2.rank();
-			if (r1_rank < r2_rank) {
-				return -1;
-			} else if (r1_rank > r2_rank) {
-				return 1;
-			}
-
-			return 0;
-		}
-	}
+	public Map<String,Object> annotations();
+	
+	/**
+	 * Get a single annotation associated with this rewrite rule. Annotations are
+	 * used-supplied fields that provide some kind of supplementary information.
+	 * For example, one could use a "@Name" annotation to give each rule a
+	 * unique name.  Similarly, one can provide a description for each rule.
+	 * 
+	 * @param name
+	 * @return
+	 */
+	public Object annotation(String n);
 }

@@ -34,7 +34,7 @@ public class Inference extends AbstractRewrite {
 	
 	private final ReductionRule[] reductions;
 	
-	public Inference(Schema schema, Comparator<AbstractActivation> comparator, InferenceRule[] inferences,
+	public Inference(Schema schema, Comparator<Rewrite.Activation> comparator, InferenceRule[] inferences,
 			ReductionRule[] reductions) {
 		super(schema, comparator);
 		this.inferences = inferences;

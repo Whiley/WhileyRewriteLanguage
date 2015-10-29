@@ -7,27 +7,28 @@ import java.util.Comparator;
 import wyautl.core.Automaton;
 import wyrw.core.Reduction;
 import wyrw.core.ReductionRule;
+import wyrw.core.Rewrite;
 
 public class Reductions {
 	
 	
 	public static void minimiseAndReduce(Automaton automaton, int maxSteps, ReductionRule... reductions) {
-		minimiseAndReduce(automaton,maxSteps,reductions,AbstractActivation.RANK_COMPARATOR);
+		minimiseAndReduce(automaton,maxSteps,reductions,null);
 	}
 	
 	public static void minimiseAndReduce(Automaton automaton, int maxSteps, ReductionRule[] reductions,
-			Comparator<AbstractActivation> comparator) {
+			Comparator<Rewrite.Activation> comparator) {
 		automaton.minimise();
 		automaton.compact(0);
 		reduceOver(automaton, 0, maxSteps, reductions, comparator);
 	}
 	
 	public static void reduceOver(Automaton automaton, int start, int maxSteps, ReductionRule... reductions) {
-		reduceOver(automaton,start,maxSteps,reductions,AbstractActivation.RANK_COMPARATOR);
+		reduceOver(automaton,start,maxSteps,reductions,null);
 	}
 		
 	public static void reduce(Automaton automaton, int maxSteps, ReductionRule... reductions) {
-		reduceOver(automaton,0,maxSteps,reductions,AbstractActivation.RANK_COMPARATOR);
+		reduceOver(automaton,0,maxSteps,reductions,null);
 	}
 	
 	/**
@@ -36,7 +37,7 @@ public class Reductions {
 	 * @param automaton
 	 */
 	public static void reduceOver(Automaton automaton, int start, int maxSteps, ReductionRule[] reductions,
-			Comparator<AbstractActivation> comparator) {
+			Comparator<Rewrite.Activation> comparator) {
 		// Now, attempt to reduce as much as possible
 		boolean changed = true;
 		while (changed && maxSteps-- > 0) {
@@ -61,7 +62,7 @@ public class Reductions {
 	}
 	
 	private static AbstractActivation[] probe(Automaton automaton, int start, ReductionRule[] reductions,
-			Comparator<AbstractActivation> comparator) {
+			Comparator<Rewrite.Activation> comparator) {
 		ArrayList<Reduction.Activation> activations = new ArrayList<Reduction.Activation>();
 		for (int s = start; s != automaton.nStates(); ++s) {
 			// State is reachable from the given root

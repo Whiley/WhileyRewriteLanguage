@@ -19,10 +19,11 @@ public final class Types {
 		return automaton.add(new Automaton.Term(K_Not, r0));
 	}
 
-	// 
 	private final static class Reduction_0 extends AbstractRewriteRule implements ReductionRule {
 
-		public Reduction_0(Pattern.Term pattern) { super(pattern); }
+		public Reduction_0(Pattern.Term pattern) {
+			super(pattern);
+		}
 
 		public final void probe(Automaton automaton, int target, List<Reduction.Activation> activations) {
 			int r0 = target;
@@ -48,14 +49,13 @@ public final class Types {
 			automaton.resize(nStates);
 			return Automaton.K_VOID;
 		}
-		public final String name() { return ""; }
-		public final int rank() { return 0; }
 
 	}
-	// 
 	private final static class Reduction_1 extends AbstractRewriteRule implements ReductionRule {
 
-		public Reduction_1(Pattern.Term pattern) { super(pattern); }
+		public Reduction_1(Pattern.Term pattern) {
+			super(pattern);
+		}
 
 		public final void probe(Automaton automaton, int target, List<Reduction.Activation> activations) {
 			int r0 = target;
@@ -81,14 +81,13 @@ public final class Types {
 			automaton.resize(nStates);
 			return Automaton.K_VOID;
 		}
-		public final String name() { return ""; }
-		public final int rank() { return 0; }
 
 	}
-	// 
 	private final static class Reduction_2 extends AbstractRewriteRule implements ReductionRule {
 
-		public Reduction_2(Pattern.Term pattern) { super(pattern); }
+		public Reduction_2(Pattern.Term pattern) {
+			super(pattern);
+		}
 
 		public final void probe(Automaton automaton, int target, List<Reduction.Activation> activations) {
 			int r0 = target;
@@ -134,14 +133,13 @@ public final class Types {
 			automaton.resize(nStates);
 			return Automaton.K_VOID;
 		}
-		public final String name() { return ""; }
-		public final int rank() { return 0; }
 
 	}
-	// 
 	private final static class Reduction_3 extends AbstractRewriteRule implements ReductionRule {
 
-		public Reduction_3(Pattern.Term pattern) { super(pattern); }
+		public Reduction_3(Pattern.Term pattern) {
+			super(pattern);
+		}
 
 		public final void probe(Automaton automaton, int target, List<Reduction.Activation> activations) {
 			int r0 = target;
@@ -187,8 +185,6 @@ public final class Types {
 			automaton.resize(nStates);
 			return Automaton.K_VOID;
 		}
-		public final String name() { return ""; }
-		public final int rank() { return 0; }
 
 	}
 	// term $7<And($5<^{$2<^Type<$7|Atom<Not(^Proton<Any|Void|Bool|Int|Real|String>)|Proton<Any|Void|Bool|Int|Real|String>>|Or($5)|Not($2)|Ref($2)|Meta($2)|Nominal(^[^string,$2])|Term(^[^string,$2...])|Set(^[$2,^{|$2...|}[$2...]])|Bag(^[$2,^{|$2...|}[$2...]])|List(^[$2,^[$2...]])>>...}>)>
@@ -202,10 +198,11 @@ public final class Types {
 		return automaton.add(new Automaton.Term(K_And, r1));
 	}
 
-	// 
 	private final static class Reduction_4 extends AbstractRewriteRule implements ReductionRule {
 
-		public Reduction_4(Pattern.Term pattern) { super(pattern); }
+		public Reduction_4(Pattern.Term pattern) {
+			super(pattern);
+		}
 
 		public final void probe(Automaton automaton, int target, List<Reduction.Activation> activations) {
 			int r0 = target;
@@ -236,14 +233,13 @@ public final class Types {
 			automaton.resize(nStates);
 			return Automaton.K_VOID;
 		}
-		public final String name() { return ""; }
-		public final int rank() { return 0; }
 
 	}
-	// 
 	private final static class Reduction_5 extends AbstractRewriteRule implements ReductionRule {
 
-		public Reduction_5(Pattern.Term pattern) { super(pattern); }
+		public Reduction_5(Pattern.Term pattern) {
+			super(pattern);
+		}
 
 		public final void probe(Automaton automaton, int target, List<Reduction.Activation> activations) {
 			int r0 = target;
@@ -297,14 +293,13 @@ public final class Types {
 			automaton.resize(nStates);
 			return Automaton.K_VOID;
 		}
-		public final String name() { return ""; }
-		public final int rank() { return 0; }
 
 	}
-	// 
 	private final static class Reduction_6 extends AbstractRewriteRule implements ReductionRule {
 
-		public Reduction_6(Pattern.Term pattern) { super(pattern); }
+		public Reduction_6(Pattern.Term pattern) {
+			super(pattern);
+		}
 
 		public final void probe(Automaton automaton, int target, List<Reduction.Activation> activations) {
 			int r0 = target;
@@ -367,8 +362,6 @@ public final class Types {
 			automaton.resize(nStates);
 			return Automaton.K_VOID;
 		}
-		public final String name() { return ""; }
-		public final int rank() { return 0; }
 
 	}
 	// term $7<Or($5<^{$2<^Type<$7|Atom<Not(^Proton<Any|Void|Bool|Int|Real|String>)|Proton<Any|Void|Bool|Int|Real|String>>|And($5)|Not($2)|Ref($2)|Meta($2)|Nominal(^[^string,$2])|Term(^[^string,$2...])|Set(^[$2,^{|$2...|}[$2...]])|Bag(^[$2,^{|$2...|}[$2...]])|List(^[$2,^[$2...]])>>...}>)>
@@ -382,10 +375,11 @@ public final class Types {
 		return automaton.add(new Automaton.Term(K_Or, r1));
 	}
 
-	// 
 	private final static class Reduction_7 extends AbstractRewriteRule implements ReductionRule {
 
-		public Reduction_7(Pattern.Term pattern) { super(pattern); }
+		public Reduction_7(Pattern.Term pattern) {
+			super(pattern);
+		}
 
 		public final void probe(Automaton automaton, int target, List<Reduction.Activation> activations) {
 			int r0 = target;
@@ -416,14 +410,13 @@ public final class Types {
 			automaton.resize(nStates);
 			return Automaton.K_VOID;
 		}
-		public final String name() { return ""; }
-		public final int rank() { return 0; }
 
 	}
-	// 
 	private final static class Reduction_8 extends AbstractRewriteRule implements ReductionRule {
 
-		public Reduction_8(Pattern.Term pattern) { super(pattern); }
+		public Reduction_8(Pattern.Term pattern) {
+			super(pattern);
+		}
 
 		public final void probe(Automaton automaton, int target, List<Reduction.Activation> activations) {
 			int r0 = target;
@@ -477,8 +470,6 @@ public final class Types {
 			automaton.resize(nStates);
 			return Automaton.K_VOID;
 		}
-		public final String name() { return ""; }
-		public final int rank() { return 0; }
 
 	}
 	// term Any
@@ -505,10 +496,11 @@ public final class Types {
 	public final static int K_String = 8;
 	public final static Automaton.Term String = new Automaton.Term(K_String);
 
-	// 
 	private final static class Reduction_9 extends AbstractRewriteRule implements ReductionRule {
 
-		public Reduction_9(Pattern.Term pattern) { super(pattern); }
+		public Reduction_9(Pattern.Term pattern) {
+			super(pattern);
+		}
 
 		public final void probe(Automaton automaton, int target, List<Reduction.Activation> activations) {
 			int r0 = target;
@@ -549,14 +541,13 @@ public final class Types {
 			automaton.resize(nStates);
 			return Automaton.K_VOID;
 		}
-		public final String name() { return ""; }
-		public final int rank() { return 0; }
 
 	}
-	// 
 	private final static class Reduction_10 extends AbstractRewriteRule implements ReductionRule {
 
-		public Reduction_10(Pattern.Term pattern) { super(pattern); }
+		public Reduction_10(Pattern.Term pattern) {
+			super(pattern);
+		}
 
 		public final void probe(Automaton automaton, int target, List<Reduction.Activation> activations) {
 			int r0 = target;
@@ -598,14 +589,13 @@ public final class Types {
 			automaton.resize(nStates);
 			return Automaton.K_VOID;
 		}
-		public final String name() { return ""; }
-		public final int rank() { return 0; }
 
 	}
-	// 
 	private final static class Reduction_11 extends AbstractRewriteRule implements ReductionRule {
 
-		public Reduction_11(Pattern.Term pattern) { super(pattern); }
+		public Reduction_11(Pattern.Term pattern) {
+			super(pattern);
+		}
 
 		public final void probe(Automaton automaton, int target, List<Reduction.Activation> activations) {
 			int r0 = target;
@@ -664,14 +654,13 @@ public final class Types {
 			automaton.resize(nStates);
 			return Automaton.K_VOID;
 		}
-		public final String name() { return ""; }
-		public final int rank() { return 0; }
 
 	}
-	// 
 	private final static class Reduction_12 extends AbstractRewriteRule implements ReductionRule {
 
-		public Reduction_12(Pattern.Term pattern) { super(pattern); }
+		public Reduction_12(Pattern.Term pattern) {
+			super(pattern);
+		}
 
 		public final void probe(Automaton automaton, int target, List<Reduction.Activation> activations) {
 			int r0 = target;
@@ -741,14 +730,13 @@ public final class Types {
 			automaton.resize(nStates);
 			return Automaton.K_VOID;
 		}
-		public final String name() { return ""; }
-		public final int rank() { return 0; }
 
 	}
-	// 
 	private final static class Reduction_13 extends AbstractRewriteRule implements ReductionRule {
 
-		public Reduction_13(Pattern.Term pattern) { super(pattern); }
+		public Reduction_13(Pattern.Term pattern) {
+			super(pattern);
+		}
 
 		public final void probe(Automaton automaton, int target, List<Reduction.Activation> activations) {
 			int r0 = target;
@@ -789,14 +777,13 @@ public final class Types {
 			automaton.resize(nStates);
 			return Automaton.K_VOID;
 		}
-		public final String name() { return ""; }
-		public final int rank() { return 0; }
 
 	}
-	// 
 	private final static class Reduction_14 extends AbstractRewriteRule implements ReductionRule {
 
-		public Reduction_14(Pattern.Term pattern) { super(pattern); }
+		public Reduction_14(Pattern.Term pattern) {
+			super(pattern);
+		}
 
 		public final void probe(Automaton automaton, int target, List<Reduction.Activation> activations) {
 			int r0 = target;
@@ -838,8 +825,6 @@ public final class Types {
 			automaton.resize(nStates);
 			return Automaton.K_VOID;
 		}
-		public final String name() { return ""; }
-		public final int rank() { return 0; }
 
 	}
 	// term $4<Ref($2<^Type<$4|Atom<Not(^Proton<Any|Void|Bool|Int|Real|String>)|Proton<Any|Void|Bool|Int|Real|String>>|Or(^{$2...})|And(^{$2...})|Not($2)|Meta($2)|Nominal(^[^string,$2])|Term(^[^string,$2...])|Set(^[$2,^{|$2...|}[$2...]])|Bag(^[$2,^{|$2...|}[$2...]])|List(^[$2,^[$2...]])>>)>
@@ -848,10 +833,11 @@ public final class Types {
 		return automaton.add(new Automaton.Term(K_Ref, r0));
 	}
 
-	// 
 	private final static class Reduction_15 extends AbstractRewriteRule implements ReductionRule {
 
-		public Reduction_15(Pattern.Term pattern) { super(pattern); }
+		public Reduction_15(Pattern.Term pattern) {
+			super(pattern);
+		}
 
 		public final void probe(Automaton automaton, int target, List<Reduction.Activation> activations) {
 			int r0 = target;
@@ -877,14 +863,13 @@ public final class Types {
 			automaton.resize(nStates);
 			return Automaton.K_VOID;
 		}
-		public final String name() { return ""; }
-		public final int rank() { return 0; }
 
 	}
-	// 
 	private final static class Reduction_16 extends AbstractRewriteRule implements ReductionRule {
 
-		public Reduction_16(Pattern.Term pattern) { super(pattern); }
+		public Reduction_16(Pattern.Term pattern) {
+			super(pattern);
+		}
 
 		public final void probe(Automaton automaton, int target, List<Reduction.Activation> activations) {
 			int r0 = target;
@@ -948,14 +933,13 @@ public final class Types {
 			automaton.resize(nStates);
 			return Automaton.K_VOID;
 		}
-		public final String name() { return ""; }
-		public final int rank() { return 0; }
 
 	}
-	// 
 	private final static class Reduction_17 extends AbstractRewriteRule implements ReductionRule {
 
-		public Reduction_17(Pattern.Term pattern) { super(pattern); }
+		public Reduction_17(Pattern.Term pattern) {
+			super(pattern);
+		}
 
 		public final void probe(Automaton automaton, int target, List<Reduction.Activation> activations) {
 			int r0 = target;
@@ -1014,14 +998,13 @@ public final class Types {
 			automaton.resize(nStates);
 			return Automaton.K_VOID;
 		}
-		public final String name() { return ""; }
-		public final int rank() { return 0; }
 
 	}
-	// 
 	private final static class Reduction_18 extends AbstractRewriteRule implements ReductionRule {
 
-		public Reduction_18(Pattern.Term pattern) { super(pattern); }
+		public Reduction_18(Pattern.Term pattern) {
+			super(pattern);
+		}
 
 		public final void probe(Automaton automaton, int target, List<Reduction.Activation> activations) {
 			int r0 = target;
@@ -1092,8 +1075,6 @@ public final class Types {
 			automaton.resize(nStates);
 			return Automaton.K_VOID;
 		}
-		public final String name() { return ""; }
-		public final int rank() { return 0; }
 
 	}
 	// term $4<Meta($2<^Type<$4|Atom<Not(^Proton<Any|Void|Bool|Int|Real|String>)|Proton<Any|Void|Bool|Int|Real|String>>|Or(^{$2...})|And(^{$2...})|Not($2)|Ref($2)|Nominal(^[^string,$2])|Term(^[^string,$2...])|Set(^[$2,^{|$2...|}[$2...]])|Bag(^[$2,^{|$2...|}[$2...]])|List(^[$2,^[$2...]])>>)>
@@ -1102,10 +1083,11 @@ public final class Types {
 		return automaton.add(new Automaton.Term(K_Meta, r0));
 	}
 
-	// 
 	private final static class Reduction_19 extends AbstractRewriteRule implements ReductionRule {
 
-		public Reduction_19(Pattern.Term pattern) { super(pattern); }
+		public Reduction_19(Pattern.Term pattern) {
+			super(pattern);
+		}
 
 		public final void probe(Automaton automaton, int target, List<Reduction.Activation> activations) {
 			int r0 = target;
@@ -1131,14 +1113,13 @@ public final class Types {
 			automaton.resize(nStates);
 			return Automaton.K_VOID;
 		}
-		public final String name() { return ""; }
-		public final int rank() { return 0; }
 
 	}
-	// 
 	private final static class Reduction_20 extends AbstractRewriteRule implements ReductionRule {
 
-		public Reduction_20(Pattern.Term pattern) { super(pattern); }
+		public Reduction_20(Pattern.Term pattern) {
+			super(pattern);
+		}
 
 		public final void probe(Automaton automaton, int target, List<Reduction.Activation> activations) {
 			int r0 = target;
@@ -1202,14 +1183,13 @@ public final class Types {
 			automaton.resize(nStates);
 			return Automaton.K_VOID;
 		}
-		public final String name() { return ""; }
-		public final int rank() { return 0; }
 
 	}
-	// 
 	private final static class Reduction_21 extends AbstractRewriteRule implements ReductionRule {
 
-		public Reduction_21(Pattern.Term pattern) { super(pattern); }
+		public Reduction_21(Pattern.Term pattern) {
+			super(pattern);
+		}
 
 		public final void probe(Automaton automaton, int target, List<Reduction.Activation> activations) {
 			int r0 = target;
@@ -1268,14 +1248,13 @@ public final class Types {
 			automaton.resize(nStates);
 			return Automaton.K_VOID;
 		}
-		public final String name() { return ""; }
-		public final int rank() { return 0; }
 
 	}
-	// 
 	private final static class Reduction_22 extends AbstractRewriteRule implements ReductionRule {
 
-		public Reduction_22(Pattern.Term pattern) { super(pattern); }
+		public Reduction_22(Pattern.Term pattern) {
+			super(pattern);
+		}
 
 		public final void probe(Automaton automaton, int target, List<Reduction.Activation> activations) {
 			int r0 = target;
@@ -1346,8 +1325,6 @@ public final class Types {
 			automaton.resize(nStates);
 			return Automaton.K_VOID;
 		}
-		public final String name() { return ""; }
-		public final int rank() { return 0; }
 
 	}
 	// term $9<Term(^[^string,$3<^Type<$9|Atom<Not(^Proton<Any|Void|Bool|Int|Real|String>)|Proton<Any|Void|Bool|Int|Real|String>>|Or(^{$3...})|And(^{$3...})|Not($3)|Ref($3)|Meta($3)|Nominal(^[^string,$3])|Set(^[$3,^{|$3...|}[$3...]])|Bag(^[$3,^{|$3...|}[$3...]])|List(^[$3,^[$3...]])>>...])>
@@ -1361,10 +1338,11 @@ public final class Types {
 		return automaton.add(new Automaton.Term(K_Term, r1));
 	}
 
-	// 
 	private final static class Reduction_23 extends AbstractRewriteRule implements ReductionRule {
 
-		public Reduction_23(Pattern.Term pattern) { super(pattern); }
+		public Reduction_23(Pattern.Term pattern) {
+			super(pattern);
+		}
 
 		public final void probe(Automaton automaton, int target, List<Reduction.Activation> activations) {
 			int r0 = target;
@@ -1452,8 +1430,6 @@ public final class Types {
 			automaton.resize(nStates);
 			return Automaton.K_VOID;
 		}
-		public final String name() { return ""; }
-		public final int rank() { return 0; }
 
 	}
 	// term $9<Nominal(^[^string,$3<^Type<$9|Atom<Not(^Proton<Any|Void|Bool|Int|Real|String>)|Proton<Any|Void|Bool|Int|Real|String>>|Or(^{$3...})|And(^{$3...})|Not($3)|Ref($3)|Meta($3)|Term(^[^string,$3...])|Set(^[$3,^{|$3...|}[$3...]])|Bag(^[$3,^{|$3...|}[$3...]])|List(^[$3,^[$3...]])>>])>
@@ -1467,10 +1443,11 @@ public final class Types {
 		return automaton.add(new Automaton.Term(K_Nominal, r1));
 	}
 
-	// 
 	private final static class Reduction_24 extends AbstractRewriteRule implements ReductionRule {
 
-		public Reduction_24(Pattern.Term pattern) { super(pattern); }
+		public Reduction_24(Pattern.Term pattern) {
+			super(pattern);
+		}
 
 		public final void probe(Automaton automaton, int target, List<Reduction.Activation> activations) {
 			int r0 = target;
@@ -1497,8 +1474,6 @@ public final class Types {
 			automaton.resize(nStates);
 			return Automaton.K_VOID;
 		}
-		public final String name() { return ""; }
-		public final int rank() { return 0; }
 
 	}
 	// term Fun(^[$2<^Type<Atom<Not(^Proton<Any|Void|Bool|Int|Real|String>)|Proton<Any|Void|Bool|Int|Real|String>>|Or(^{$2...})|And(^{$2...})|Not($2)|Ref($2)|Meta($2)|Nominal(^[^string,$2])|Term(^[^string,$2...])|Set(^[$2,^{|$2...|}[$2...]])|Bag(^[$2,^{|$2...|}[$2...]])|List(^[$2,^[$2...]])>>,$2])
@@ -1523,10 +1498,11 @@ public final class Types {
 		return automaton.add(new Automaton.Term(K_Set, r1));
 	}
 
-	// 
 	private final static class Reduction_25 extends AbstractRewriteRule implements ReductionRule {
 
-		public Reduction_25(Pattern.Term pattern) { super(pattern); }
+		public Reduction_25(Pattern.Term pattern) {
+			super(pattern);
+		}
 
 		public final void probe(Automaton automaton, int target, List<Reduction.Activation> activations) {
 			int r0 = target;
@@ -1575,8 +1551,6 @@ public final class Types {
 			automaton.resize(nStates);
 			return Automaton.K_VOID;
 		}
-		public final String name() { return ""; }
-		public final int rank() { return 0; }
 
 	}
 	// term $11<Bag($9<^[$2<^Type<$11|Atom<Not(^Proton<Any|Void|Bool|Int|Real|String>)|Proton<Any|Void|Bool|Int|Real|String>>|Or(^{$2...})|And(^{$2...})|Not($2)|Ref($2)|Meta($2)|Nominal(^[^string,$2])|Term(^[^string,$2...])|Set($9)|List(^[$2,^[$2...]])>>,^{|$2...|}[$2...]]>)>
@@ -1590,10 +1564,11 @@ public final class Types {
 		return automaton.add(new Automaton.Term(K_Bag, r1));
 	}
 
-	// 
 	private final static class Reduction_26 extends AbstractRewriteRule implements ReductionRule {
 
-		public Reduction_26(Pattern.Term pattern) { super(pattern); }
+		public Reduction_26(Pattern.Term pattern) {
+			super(pattern);
+		}
 
 		public final void probe(Automaton automaton, int target, List<Reduction.Activation> activations) {
 			int r0 = target;
@@ -1642,8 +1617,6 @@ public final class Types {
 			automaton.resize(nStates);
 			return Automaton.K_VOID;
 		}
-		public final String name() { return ""; }
-		public final int rank() { return 0; }
 
 	}
 	// term $11<List(^[$2<^Type<$11|Atom<Not(^Proton<Any|Void|Bool|Int|Real|String>)|Proton<Any|Void|Bool|Int|Real|String>>|Or(^{$2...})|And(^{$2...})|Not($2)|Ref($2)|Meta($2)|Nominal(^[^string,$2])|Term(^[^string,$2...])|Set(^[$2,^{|$2...|}[$2...]])|Bag(^[$2,^{|$2...|}[$2...]])>>,^[$2...]])>
@@ -1657,10 +1630,11 @@ public final class Types {
 		return automaton.add(new Automaton.Term(K_List, r1));
 	}
 
-	// 
 	private final static class Reduction_27 extends AbstractRewriteRule implements ReductionRule {
 
-		public Reduction_27(Pattern.Term pattern) { super(pattern); }
+		public Reduction_27(Pattern.Term pattern) {
+			super(pattern);
+		}
 
 		public final void probe(Automaton automaton, int target, List<Reduction.Activation> activations) {
 			int r0 = target;
@@ -1697,14 +1671,13 @@ public final class Types {
 			automaton.resize(nStates);
 			return Automaton.K_VOID;
 		}
-		public final String name() { return ""; }
-		public final int rank() { return 0; }
 
 	}
-	// 
 	private final static class Reduction_28 extends AbstractRewriteRule implements ReductionRule {
 
-		public Reduction_28(Pattern.Term pattern) { super(pattern); }
+		public Reduction_28(Pattern.Term pattern) {
+			super(pattern);
+		}
 
 		public final void probe(Automaton automaton, int target, List<Reduction.Activation> activations) {
 			int r0 = target;
@@ -1769,14 +1742,13 @@ public final class Types {
 			automaton.resize(nStates);
 			return Automaton.K_VOID;
 		}
-		public final String name() { return ""; }
-		public final int rank() { return 0; }
 
 	}
-	// 
 	private final static class Reduction_29 extends AbstractRewriteRule implements ReductionRule {
 
-		public Reduction_29(Pattern.Term pattern) { super(pattern); }
+		public Reduction_29(Pattern.Term pattern) {
+			super(pattern);
+		}
 
 		public final void probe(Automaton automaton, int target, List<Reduction.Activation> activations) {
 			int r0 = target;
@@ -1944,8 +1916,6 @@ public final class Types {
 			automaton.resize(nStates);
 			return Automaton.K_VOID;
 		}
-		public final String name() { return ""; }
-		public final int rank() { return 0; }
 
 	}
 	// =========================================================================

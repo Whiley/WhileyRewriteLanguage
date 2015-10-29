@@ -164,8 +164,8 @@ public class ConsoleRewriter {
 		if(activation.rule() instanceof InferenceRule) {
 			System.out.print("* ");
 		}
-		if(activation.rule().name() != null) {
-			System.out.print(activation.rule().name());
+		if(activation.rule().annotation("name") != null) {
+			System.out.print(activation.rule().annotation("name"));
 		}
 		System.out.print(" #" + activation.target());
 		if(step != null) {
@@ -182,7 +182,7 @@ public class ConsoleRewriter {
 			AbstractActivation activation = rewrite.states().get(before).activation(step.activation());
 			int after = step.after();
 			System.out.print(before + " => " + after);			
-			System.out.println(" (" + activation.target() + ", " + activation.rule().name() + ")");
+			System.out.println(" (" + activation.target() + ", " + activation.rule().annotation("name") + ")");
 		}
 	}		
 	
@@ -233,9 +233,9 @@ public class ConsoleRewriter {
 	private Rewrite constructRewrite(final Schema schema, final ReductionRule[] reductions,
 			InferenceRule[] inferences, RwMode mode) {
 		if (mode == RwMode.INFER) {
-			return new Inference(schema, AbstractActivation.RANK_COMPARATOR, inferences, reductions);
+			return new Inference(schema, null, inferences, reductions);
 		} else {
-			return new Reduction(schema, AbstractActivation.RANK_COMPARATOR, reductions);
+			return new Reduction(schema, null, reductions);
 		}
 	}
 	
