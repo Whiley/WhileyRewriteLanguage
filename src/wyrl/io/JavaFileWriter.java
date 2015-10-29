@@ -248,10 +248,6 @@ public class JavaFileWriter {
 		boolean isReduction = decl instanceof ReduceDecl;
 		Type param = decl.pattern.attribute(Attribute.Type.class).type;
 
-		if(decl.name != null) {
-			myOut(1, "// " + decl.name);
-		}
-
 		String className = isReduction ? "Reduction_" + reductionCounter++ : "Inference_" + inferenceCounter++;
 
 		if (isReduction) {
@@ -343,13 +339,6 @@ public class JavaFileWriter {
 		myOut(3, "automaton.resize(nStates);");
 		myOut(3, "return Automaton.K_VOID;");
 		myOut(2, "}");
-
-		// ===============================================
-		// annotations
-		// ===============================================
-
-		myOut(2, "public final String name() { return \"" + decl.name + "\"; }");
-		myOut(2, "public final int rank() { return " + decl.rank + "; }");
 
 		myOut();
 		//		

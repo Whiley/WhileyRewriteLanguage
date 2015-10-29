@@ -19,7 +19,7 @@ public class Reduction extends AbstractRewrite {
 	
 	private final HashMap<Automaton,Integer> cache;
 	
-	public Reduction(Schema schema, Comparator<AbstractActivation> comparator,
+	public Reduction(Schema schema, Comparator<Rewrite.Activation> comparator,
 			ReductionRule[] reductions) {
 		super(schema, comparator);
 		this.reductions = reductions;

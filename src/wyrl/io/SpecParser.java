@@ -244,18 +244,14 @@ public class SpecParser {
 			reduce = false;
 		}
 		Pattern.Term pattern = (Pattern.Term) parsePatternTerm();
-		Pair<String,Integer> nameAndRank = parseNameAndRank();
 		match(Colon.class);
 		matchEndLine();
 		List<RuleDecl> rules = parseRuleBlock(1);
 
-		String name = nameAndRank.first();
-		int rank = nameAndRank.second();
-
 		if(reduce) {
-			return new ReduceDecl(pattern,rules,name,rank,annotations,sourceAttr(start,index-1));
+			return new ReduceDecl(pattern,rules,annotations,sourceAttr(start,index-1));
 		} else {
-			return new InferDecl(pattern,rules,name,rank,annotations,sourceAttr(start,index-1));
+			return new InferDecl(pattern,rules,annotations,sourceAttr(start,index-1));
 		}
 	}
 

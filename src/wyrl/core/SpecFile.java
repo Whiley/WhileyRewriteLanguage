@@ -90,30 +90,26 @@ public class SpecFile {
 	public static abstract class RewriteDecl extends AnnotableDecl {
 		public Pattern.Term pattern;
 		public final ArrayList<RuleDecl> rules;
-		public final String name;
-		public final int rank;
 
 		public RewriteDecl(Pattern.Term pattern, Collection<RuleDecl> rules,
-				String name, int rank, Map<String,Object> annotations, Attribute... attributes) {
+				Map<String,Object> annotations, Attribute... attributes) {
 			super(annotations, attributes);
 			this.pattern = pattern;
-			this.rules = new ArrayList<RuleDecl>(rules);
-			this.name = name;
-			this.rank = rank;
+			this.rules = new ArrayList<RuleDecl>(rules);			
 		}
 	}
 
 	public static class ReduceDecl extends RewriteDecl {
 		public ReduceDecl(Pattern.Term pattern, Collection<RuleDecl> rules,
-				String name, int rank, Map<String,Object> annotations, Attribute... attributes) {
-			super(pattern,rules,name,rank,annotations,attributes);
+				Map<String,Object> annotations, Attribute... attributes) {
+			super(pattern,rules,annotations,attributes);
 		}
 	}
 
 	public static class InferDecl extends RewriteDecl {
-		public InferDecl(Pattern.Term pattern, Collection<RuleDecl> rules,
-				String name, int rank, Map<String,Object> annotations, Attribute... attributes) {
-			super(pattern,rules,name,rank,annotations,attributes);
+		public InferDecl(Pattern.Term pattern, Collection<RuleDecl> rules, Map<String, Object> annotations,
+				Attribute... attributes) {
+			super(pattern,rules,annotations,attributes);
 		}
 	}
 

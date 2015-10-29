@@ -113,68 +113,49 @@ public abstract class AbstractActivation implements Rewrite.Activation {
 	public abstract int apply(Automaton automaton);
 	
 	/**
-	 * Constant comparator for use with rewriters.
-	 */
-	public static final RankComparator RANK_COMPARATOR = new RankComparator();
-	
-	/**
 	 * A simple comparator for comparing activations based primarily on rule
 	 * rank.
 	 *
 	 * @param <AbstractActivation>
 	 */
-	public static final class RankComparator implements Comparator<AbstractActivation> {
 
+	/**
+	 * A standard comparator for comparing rewrite rules based on a given
+	 * annotation. The annotation itself must be of integer type, and rules are
+	 * simply compared using this directory.
+	 *
+	 * @author David J. Pearce
+	 *
+	 */
+	public static final class RankComparator
+			implements Comparator<Rewrite.Activation> {
+
+		private final String annotation;
+		
+		public RankComparator(String annotation) {
+			this.annotation = annotation;
+		}
+		
 		@Override
-		public int compare(AbstractActivation a1, AbstractActivation a2) {
-			final RewriteRule r1 = a1.rule();
-			final RewriteRule r2 = a2.rule();
+		public int compare(Rewrite.Activation o1, Rewrite.Activation o2) {
+			Object r1_ann = o1.rule().annotation(annotation);
+			Object r2_ann = o2.rule().annotation(annotation);
 			
-			// First, stratify based on rule class
-			if (r1 instanceof ReductionRule && r2 instanceof InferenceRule) {
+			if(r1_ann == null) {
+				return r2_ann == null ? 0 : 1;
+			} else if(r2_ann == null) {
 				return -1;
-			} else if (r1 instanceof InferenceRule && r2 instanceof ReductionRule) {
-				return 1;
 			}
 			
-			// ===============================
-			final int r1_rank = r1.rank();
-			final int r2_rank = r2.rank();
-			
-			if(r1_rank < r2_rank) {
+			int r1_rank = (int) r1_ann;
+			int r2_rank = (int) r2_ann;
+			if (r1_rank < r2_rank) {
 				return -1;
-			} else if(r1_rank > r2_rank) {
-				return 1;
-			} 
-			
-			// ===============================			
-			final int a1_root = a1.target();
-			final int a2_root = a2.target();
-			
-			if(a1_root < a2_root) {
-				return -1;
-			} else if(a1_root > a2_root) {
+			} else if (r1_rank > r2_rank) {
 				return 1;
 			}
-			
-			// ===============================
-			final int[] a1_state = a1.state;
-			final int[] a2_state = a2.state;
-			if(a1_state.length < a2_state.length) {
-				return -1; 
-			} else if(a1_state.length > a2_state.length) {
-				return 1;
-			}
-			for(int i=0;i!=a1_state.length;++i) {
-				int a1e = a1_state[i];
-				int a2e = a2_state[i];
-				if(a1e < a2e) {
-					return -1;
-				} else if(a1e > a2e) {
-					return 1;
-				}
-			}
+
 			return 0;
-		}		
+		}
 	}
 }

@@ -58,9 +58,9 @@ public abstract class AbstractRewrite implements Rewrite {
 	 * Used to sort activations generated for a given state. This allows for
 	 * some heuristics which reduce the amount of rewriting required.
 	 */
-	protected final Comparator<AbstractActivation> comparator;
+	protected final Comparator<Rewrite.Activation> comparator;
 
-	public AbstractRewrite(Schema schema, Comparator<AbstractActivation> comparator,
+	public AbstractRewrite(Schema schema, Comparator<Rewrite.Activation> comparator,
 			RewriteRule... rules) {
 		this.schema = schema;
 		this.comparator = comparator;

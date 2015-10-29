@@ -55,6 +55,10 @@ public abstract class AbstractRewriteRule implements RewriteRule {
 		return annotations;
 	}
 	
+	public Object annotation(String a) {
+		return annotations.get(a);
+	}
+	
 	protected void put(String annotation, Object value) {
 		annotations.put(annotation, value);
 	}
