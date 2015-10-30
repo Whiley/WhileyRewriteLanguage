@@ -282,7 +282,12 @@ public class JavaFileWriter {
 		myOut(3, "int r" + thus + " = target;");
 		int level = translatePatternMatch(3, decl.pattern, null, thus,
 				environment);
-
+		if (decl.requires != null) {
+			// FIXME: this is not necessarily always required
+			translateStateUnpack(level,decl.pattern,thus,environment);
+			int requires = translate(level, decl.requires, environment, file);
+			myOut(level++, "if(r" + requires + ") { // REQUIRES");
+		}
 		// Add the appropriate activation
 		indent(level);
 		out.print("int[] state = {");

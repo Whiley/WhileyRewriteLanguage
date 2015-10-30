@@ -244,38 +244,30 @@ public class SpecParser {
 			reduce = false;
 		}
 		Pattern.Term pattern = (Pattern.Term) parsePatternTerm();
+		Expr requires = parseRequiresClause();
 		match(Colon.class);
 		matchEndLine();
 		List<RuleDecl> rules = parseRuleBlock(1);
 
 		if(reduce) {
-			return new ReduceDecl(pattern,rules,annotations,sourceAttr(start,index-1));
+			return new ReduceDecl(pattern,requires,rules,annotations,sourceAttr(start,index-1));
 		} else {
-			return new InferDecl(pattern,rules,annotations,sourceAttr(start,index-1));
+			return new InferDecl(pattern,requires,rules,annotations,sourceAttr(start,index-1));
 		}
 	}
 
-	private Pair<String,Integer> parseNameAndRank() {
-		String name = "";
-		int rank = 0;
+	private Expr parseRequiresClause() {
 		skipWhiteSpace(true);
-		Token lookahead = tokens.get(index);
-		if(lookahead.text.equals("name")) {
-			matchKeyword("name");
-			Strung s = match(Strung.class);
-			name = s.text.substring(1,s.text.length()-1);
+		if (index < tokens.size() && tokens.get(index).text.equals("requires")) {
+			matchKeyword("requires");
+			Expr result = parseCondition();
+			skipWhiteSpace(true); 
+			return result;
+		} else {
+			return null;
 		}
-		skipWhiteSpace(true);
-		lookahead = tokens.get(index);
-		if(lookahead.text.equals("rank")) {
-			matchKeyword("rank");
-			Int i = match(Int.class);
-			rank = i.value.intValue();
-		}
-
-		return new Pair<String,Integer>(name,rank);
 	}
-
+	
 	private Decl parseFunctionDecl(Map<String,Object> annotations) {
 		int start = index;
 		matchKeyword("function");

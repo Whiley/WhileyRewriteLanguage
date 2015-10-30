@@ -95,7 +95,13 @@ public class TypeInference {
 		Type.Ref thisType = infer(rd.pattern,environment);
 		// The "this" variable can be used to access the outermost rule.
 		environment.put("this",thisType);
-
+		// Infer types for the requires clause (if present)
+		if(rd.requires != null) {
+			Pair<Expr,Type> p = resolve(rd.requires,environment);			
+			rd.requires = p.first();
+			checkSubtype(Type.T_BOOL(),p.second(),rd.requires);
+		}
+		// Now, infer types for the individual rule declarations
 		for(SpecFile.RuleDecl rule : rd.rules) {
 			infer(rule,environment);
 		}
