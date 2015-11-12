@@ -38,8 +38,9 @@ reduce Intersect{Type x}:
 reduce Intersect{Not(Any), Type... xs}:
     => Not(Any)
 
-reduce Intersect{Any, Type... xs}:
-    => Intersect (xs), if |xs| > 0
+reduce Intersect{Any, Type... xs}
+requires |xs| > 0:
+    => Intersect (xs)
 
 reduce Intersect{Int, Pair y, Type... ys}:
     => Not(Any)
@@ -47,8 +48,9 @@ reduce Intersect{Int, Pair y, Type... ys}:
 reduce Intersect{Intersect{Type... xs}, Type... ys}:
     => Intersect (xs ++ ys)
 
-reduce Intersect{Not(Type x), Type y, Type... ys}:
-    => Not(Any), if x == y
+reduce Intersect{Not(Type x), Type y, Type... ys}
+requires x == y:
+    => Not(Any)
 
 reduce Intersect{Union{Type... xs}, Type... ys}:
     => let ys = { Intersect(x ++ ys) | x in xs }
@@ -76,8 +78,9 @@ reduce Union{Not(Any), Type... xs}:
     => Union (xs), if |xs| > 0
     => Not(Any)
 
-reduce Union{Not(Type x), Type y, Type... ys}:
-    => Any, if x == y
+reduce Union{Not(Type x), Type y, Type... ys}
+requires x == y:
+    => Any
 
 reduce Union{Union{Type... xs}, Type... ys}:
     => Union (xs ++ ys)
