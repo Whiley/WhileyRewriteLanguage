@@ -20,22 +20,22 @@ define Bool as True | False
 
 term Not(BExpr)
 
-reduce Not(Bool b)
-name "Not(Bool)":
+@name("Not(Bool)")
+reduce Not(Bool b):
     => False, if b == True
     => True
 
-reduce Not(Not(* x))
-name "Not(Not)":
+@name("Not(Not)")
+reduce Not(Not(* x)):
     => x
 
-reduce Not(And{BExpr... xs})
-name "Not(And)":
+@name("Not(And)")
+reduce Not(And{BExpr... xs}):
     => let ys = { Not(x) | x in xs }
        in Or(ys)
 
-reduce Not(Or{BExpr... xs})
-name "Not(Or)":
+@name("Not(Or)")
+reduce Not(Or{BExpr... xs}):
     => let ys = { Not(x) | x in xs }
        in And(ys)
 
@@ -45,26 +45,26 @@ name "Not(Or)":
 
 term And{BExpr...}
 
-reduce And{BExpr x}
-name "And{x}":
+@name("And{x}")
+reduce And{BExpr x}:
     => x
 
-reduce And{Bool b, BExpr... xs}
-name "And{Bool,...}":
+@name("And{Bool,...}")
+reduce And{Bool b, BExpr... xs}:
     => False, if b == False
     => True, if |xs| == 0
     => And (xs)
 
-reduce And{And{BExpr... xs}, BExpr... ys}
-name "And{And,...}":
+@name("And{And,...}")
+reduce And{And{BExpr... xs}, BExpr... ys}:
     => And (xs ++ ys)
 
-reduce And{Not(BExpr x), BExpr y, BExpr... ys}
-name "And{Not,...}":
+@name("And{Not,...}")
+reduce And{Not(BExpr x), BExpr y, BExpr... ys}:
     => False, if x == y
 
-reduce And{Or{BExpr... xs}, BExpr... ys}
-name "And{Or,...}":
+@name("And{Or,...}")
+reduce And{Or{BExpr... xs}, BExpr... ys}:
     => let ys = { And(x ++ ys) | x in xs }
        in Or(ys)
 
@@ -74,22 +74,22 @@ name "And{Or,...}":
 
 term Or{BExpr...}
 
-reduce Or{BExpr x}
-name "Or{x}":
+@name("Or{x}")
+reduce Or{BExpr x}:
     => x
 
-reduce Or{Bool b, BExpr... xs}
-name "Or{Bool,...}":
+@name("Or{Bool,...}")
+reduce Or{Bool b, BExpr... xs}:
     => True, if b == True
     => False, if |xs| == 0
     => Or (xs)
 
-reduce Or{Not(BExpr x), BExpr y, BExpr... ys}
-name "Or{Not,...}":
+@name("Or{Not,...}")
+reduce Or{Not(BExpr x), BExpr y, BExpr... ys}:
     => True, if x == y
 
-reduce Or{Or{BExpr... xs}, BExpr... ys}
-name "Or{Or,...}":
+@name("Or{Or,...}")
+reduce Or{Or{BExpr... xs}, BExpr... ys}:
     => Or (xs ++ ys)
 
 // ====================================================================
