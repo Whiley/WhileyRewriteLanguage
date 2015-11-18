@@ -284,8 +284,10 @@ public class JavaFileWriter {
 				environment);
 		if (decl.requires != null) {
 			// FIXME: this is not necessarily always required
-			translateStateUnpack(level,decl.pattern,thus,environment);
-			int requires = translate(level, decl.requires, environment, file);
+			Environment reqEnvironment = new Environment();
+			reqEnvironment.allocate(param, "this");
+			translateStateUnpack(level,decl.pattern,thus,false,reqEnvironment);
+			int requires = translate(level, decl.requires, reqEnvironment, file);
 			myOut(level++, "if(r" + requires + ") { // REQUIRES");
 		}
 		// Add the appropriate activation
@@ -334,7 +336,7 @@ public class JavaFileWriter {
 		environment = new Environment();
 		thus = environment.allocate(param, "this");
 		myOut(3, "int r" + thus + " = state[0];");
-		translateStateUnpack(3, decl.pattern, thus, environment);
+		translateStateUnpack(3, decl.pattern, thus, true, environment);
 
 		// second, translate the individual rules
 		for (RuleDecl rd : decl.rules) {
@@ -881,40 +883,40 @@ public class JavaFileWriter {
 	 * @param environment
 	 */
 	protected void translateStateUnpack(int level, Pattern pattern, int source,
-			Environment environment) {
+			boolean unpack, Environment environment) {
 		if (pattern instanceof Pattern.Leaf) {
 			translateStateUnpack(level, (Pattern.Leaf) pattern, source,
-					environment);
+					unpack, environment);
 		} else if (pattern instanceof Pattern.Term) {
 			translateStateUnpack(level, (Pattern.Term) pattern, source,
-					environment);
+					unpack, environment);
 		} else if (pattern instanceof Pattern.BagOrSet) {
 			translateStateUnpack(level, (Pattern.BagOrSet) pattern, source,
-					environment);
+					unpack, environment);
 		} else {
 			translateStateUnpack(level, (Pattern.List) pattern, source,
-					environment);
+					unpack, environment);
 		}
 	}
 
 	protected void translateStateUnpack(int level, Pattern.Leaf pattern,
-			int source, Environment environment) {
+			int source, boolean unpack, Environment environment) {
 		// Don't need to do anything!!
 	}
 
 	protected void translateStateUnpack(int level, Pattern.Term pattern,
-			int source, Environment environment) {
+			int source, boolean unpack, Environment environment) {
 		if (pattern.data != null) {
 			int target = environment.allocate(Type.T_ANY(), pattern.variable);
-			if (pattern.variable != null) {
+			if (pattern.variable != null && unpack) {
 				myOut(level, "int r" + target + " = state[" + target + "]; // " + pattern.variable);
 			}
-			translateStateUnpack(level, pattern.data, target, environment);
+			translateStateUnpack(level, pattern.data, target, unpack, environment);
 		}
 	}
 
 	protected void translateStateUnpack(int level, Pattern.BagOrSet pattern,
-			int source, Environment environment) {
+			int source, boolean unpack, Environment environment) {
 
 		Pair<Pattern, String>[] elements = pattern.elements;
 		int[] indices = new int[elements.length];
@@ -924,31 +926,7 @@ public class JavaFileWriter {
 			int item = environment.allocate(Type.T_ANY(), p_name);
 			if (pattern.unbounded && (i + 1) == elements.length) {
 				if (p_name != null) {
-					String src = "s" + source;
-					myOut(level, "Automaton.Collection " + src
-							+ " = (Automaton.Collection) automaton.get(state["
-							+ source + "]);");
-					String array = src + "children";
-					myOut(level, "int[] " + array + " = new int[" + src
-							+ ".size() - " + i + "];");
-					String idx = "s" + source + "i";
-					String jdx = "s" + source + "j";
-					myOut(level, "for(int " + idx + "=0, " + jdx + "=0; " + idx
-							+ " != " + src + ".size();++" + idx + ") {");
-					if (i != 0) {
-						indent(level + 1);
-						out.print("if(");
-						for (int j = 0; j < i; ++j) {
-							if (j != 0) {
-								out.print(" || ");
-							}
-							out.print(idx + " == r" + indices[j]);
-						}
-						out.println(") { continue; }");
-					}
-					myOut(level + 1, array + "[" + jdx + "++] = " + src + ".get(" + idx
-							+ ");");
-					myOut(level, "}");
+					String array = extractUnboundedTail(i, level, source, indices, unpack);
 					if (pattern instanceof Pattern.Set) {
 						myOut(level, "Automaton.Set r" + item
 								+ " = new Automaton.Set(" + array + ");");
@@ -965,17 +943,59 @@ public class JavaFileWriter {
 			} else {
 				int index = environment.allocate(Type.T_VOID());
 				indices[i] = index;
-				if (p_name != null) {
+				if (p_name != null && unpack) {
 					myOut(level, "int r" + item + " = state[" + item + "]; // " + p_name);
 				}
-				myOut(level, "int r" + index + " = state[" + index + "];");
-				translateStateUnpack(level, p.first(), item, environment);
+				if(unpack) {
+					myOut(level, "int r" + index + " = state[" + index + "];");
+				}
+				translateStateUnpack(level, p.first(), item, unpack, environment);
 			}
 		}
 	}
 
+	/**
+	 * Extract all elements of an array which don't match any of the supplied
+	 * indices.
+	 * 
+	 * @param i
+	 * @param level
+	 * @param source
+	 * @param indices
+	 * @return
+	 */
+	private String extractUnboundedTail(int i, int level, int source, int[] indices, boolean unpack) {
+		String src = "c" + source;
+		if (unpack) {
+			myOut(level,
+					"Automaton.Collection " + src + " = (Automaton.Collection) automaton.get(state[" + source + "]);");
+		}
+		String array = src + "children";
+		myOut(level, "int[] " + array + " = new int[" + src
+				+ ".size() - " + i + "];");
+		String idx = "s" + source + "i";
+		String jdx = "s" + source + "j";
+		myOut(level, "for(int " + idx + "=0, " + jdx + "=0; " + idx
+				+ " != " + src + ".size();++" + idx + ") {");
+		if (i != 0) {
+			indent(level + 1);
+			out.print("if(");
+			for (int j = 0; j < i; ++j) {
+				if (j != 0) {
+					out.print(" || ");
+				}
+				out.print(idx + " == r" + indices[j]);
+			}
+			out.println(") { continue; }");
+		}
+		myOut(level + 1, array + "[" + jdx + "++] = " + src + ".get(" + idx
+				+ ");");
+		myOut(level, "}");
+		return array;
+	}
+
 	protected void translateStateUnpack(int level, Pattern.List pattern,
-			int source, Environment environment) {
+			int source, boolean unpack, Environment environment) {
 
 		Pair<Pattern, String>[] elements = pattern.elements;
 		for (int i = 0; i != elements.length; ++i) {
@@ -984,9 +1004,13 @@ public class JavaFileWriter {
 			if (pattern.unbounded && (i + 1) == elements.length) {
 				int target = environment.allocate(Type.T_VOID(), p_name);
 				if (p_name != null) {
-					myOut(level, "Automaton.List r" + target
-							+ " = ((Automaton.List) automaton.get(state["
-							+ source + "])).sublist(" + i + ");");
+					if (unpack) {
+						myOut(level, "Automaton.List r" + target
+								+ " = ((Automaton.List) automaton.get(state["
+								+ source + "])).sublist(" + i + ");");
+					} else {
+						myOut(level, "Automaton.List r" + target + " = l" + source + ";");
+					}
 				}
 
 				// NOTE: calling translate unpack here is strictly unnecessary
@@ -995,10 +1019,10 @@ public class JavaFileWriter {
 
 			} else {
 				int target = environment.allocate(Type.T_ANY(), p_name);
-				if (p_name != null) {
+				if (p_name != null && unpack) {
 					myOut(level, "int r" + target + " = state[" + target + "]; // " + p_name);
 				}
-				translateStateUnpack(level, p.first(), target, environment);
+				translateStateUnpack(level, p.first(), target, unpack, environment);
 			}
 		}
 	}
