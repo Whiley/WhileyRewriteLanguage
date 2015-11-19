@@ -24,7 +24,7 @@ public class Inference extends AbstractRewrite {
 	 * performance and it remains unclear whether or not isomorphic automata are
 	 * actually a problem in practice.
 	 */
-	public static final boolean USE_SUBSTITUTION = false;
+	public static final boolean USE_SUBSTITUTION = true;
 	
 	private final int MAX_REDUCTIONS = 10000;
 		
