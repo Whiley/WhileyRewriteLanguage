@@ -32,14 +32,15 @@ public class Reductions {
 	}
 	
 	/**
-	 * Simple helper method for reducing an automaton.
+	 * Simple helper method for reducing an automaton.  
 	 * 
 	 * @param automaton
 	 */
 	public static void reduceOver(Automaton automaton, int start, int maxSteps, ReductionRule[] reductions,
 			Comparator<Rewrite.Activation> comparator) {
 		// Now, attempt to reduce as much as possible
-		boolean[] reachable = new boolean[automaton.nStates()*2];
+		Incrementaliser inc = new Incrementaliser(automaton);
+		
 		boolean changed = true;
 		while (changed && maxSteps-- > 0) {
 			changed = false;
@@ -51,19 +52,7 @@ public class Reductions {
 				int target = activation.apply(automaton);
 				if (target != Automaton.K_VOID && from != target) {
 					// Rewrite applied
-					//automaton.compact(0);
-					// Update reachability status for nodes affected by this
-					// activation. This is because such states could cause
-					// an infinite loop of re-activations. More specifically, where
-					// we activate on a state and rewrite it, but then it remains
-					// and so we repeat.
-					reachable = initReachable(automaton, reachable);
-
-					// Compact all states above the pivot to eliminate unreachable
-					// states and prevent the automaton from growing continually.
-					// This is possible because automton.rewrite() can introduce
-					// null states into the automaton.
-					compact(automaton, pivot, reachable);
+					inc.rewrite(from, target);
 					//
 					changed = true;
 					break;
@@ -72,8 +61,6 @@ public class Reductions {
 				}
 			}
 		}
-		
-		compact(automaton, 0, reachable);
 	}
 	
 	private static AbstractActivation[] probe(Automaton automaton, int start, ReductionRule[] reductions,
@@ -98,38 +85,110 @@ public class Reductions {
 		return array;
 	}
 	
-
-	private void compact(Automaton automaton, int pivot) {
+	private static final class Incrementaliser {
+		private final Automaton automaton;
+		private boolean[] reachable;
+		private int[] binding;
 		
-	}
-	
-	
-	/**
-	 * Update the reachability information associated with the automaton after
-	 * some change has occurred. This information is currently recomputed from
-	 * scratch, though in principle it could be updated incrementally.
-	 */
-	private static boolean[] initReachable(Automaton automaton,
-			boolean[] reachable) {
-
-		// TODO: update reachability information incrementally
-
-		if (reachable.length < automaton.nStates()) {
-			reachable = new boolean[automaton.nStates() * 2];
-		} else {
-			Arrays.fill(reachable, false);
+		/**
+		 * Initialise the incrementaliser with a given automaton, which is
+		 * presumed to be both compacted and minimised.
+		 * 
+		 * @param automaton
+		 */
+		public Incrementaliser(Automaton automaton) {
+			this.automaton = automaton;
+			this.reachable = new boolean[automaton.nStates()*2];
+			this.binding = new int[automaton.nStates()*2];
 		}
-		// first, visit all nodes
-		for (int i = 0; i != automaton.nRoots(); ++i) {
-			int root = automaton.getRoot(i);
-			if (root >= 0) {
-				findReachable(automaton, reachable, root);
+		
+		/**
+		 * Responsible for updating the data after a successful rewrite has been
+		 * applied to the automaton.
+		 * 
+		 * @param from
+		 * @param to
+		 */
+		public void rewrite(int from, int to) {			
+			update();
+			compact(0);
+		}
+
+		/**
+		 * Update the reachability information associated with the automaton
+		 * after some change has occurred. This information is currently
+		 * recomputed from scratch, though in principle it could be updated
+		 * incrementally.
+		 */
+		private void update() {
+
+			// TODO: update reachability information incrementally
+
+			if (reachable.length < automaton.nStates()) {
+				reachable = new boolean[automaton.nStates() * 2];
+				binding = new int[automaton.nStates() * 2];
+			} else {
+				Arrays.fill(reachable, false);
+			}
+			// first, visit all nodes
+			for (int i = 0; i != automaton.nRoots(); ++i) {
+				int root = automaton.getRoot(i);
+				if (root >= 0) {
+					findReachable(automaton, reachable, root);
+				}
 			}
 		}
+		
 
-		return reachable;
+		private void compact(int pivot) {
+			int nStates = automaton.nStates();
+			int nRoots = automaton.nRoots();
+			
+			// First, initialise binding for all states upto start state. This
+			// ensure that they are subsequently mapped to themselves.
+			for (int i = 0; i < nStates; ++i) {
+				binding[i] = i;
+			}
+
+			// Second, go through and eliminate all unreachable states and compact
+			// the automaton down, whilst updating reachable one oneStepUndo
+			// information accordingly.
+			int j = pivot;
+
+			for (int i = pivot; i < nStates; ++i) {
+				if (reachable[i]) {
+					Automaton.State ith = automaton.get(i);
+					binding[i] = j;
+					reachable[i] = false;
+					reachable[j] = true;
+					automaton.set(j++, ith);
+				}
+			}
+
+			if (j < nStates) {			
+				// Ok, some compaction actually occurred; therefore follow through
+				// and update all states accordingly.
+				nStates = j;
+				automaton.resize(nStates); // will nullify all deleted states
+
+				// Update mapping and oneStepUndo for *all* states
+				for (int i = 0; i != nStates; ++i) {
+					Automaton.State state = automaton.get(i);
+					if(state != null) {
+						state.remap(binding);
+					}
+				}
+
+				// Update mapping for all roots
+				for (int i = 0; i != nRoots; ++i) {
+					int root = automaton.getRoot(i);
+					if (root >= 0) {
+						automaton.setRoot(i, binding[root]);
+					}
+				}
+			}
+		}
 	}
-	
 	/**
 	 * Visit all states reachable from a given starting state in the given
 	 * automaton. In doing this, states which are visited are marked and,
@@ -166,57 +225,6 @@ public class Reductions {
 				Automaton.Collection compound = (Automaton.Collection) state;
 				for (int i = 0; i != compound.size(); ++i) {
 					findReachable(automaton, reachable, compound.get(i));
-				}
-			}
-		}
-	}
-	
-	private static void compact(Automaton automaton, int pivot,
-			boolean[] reachable) {
-		int nStates = automaton.nStates();
-		int nRoots = automaton.nRoots();
-		int[] binding = new int[nStates];
-
-		// First, initialise binding for all states upto start state. This
-		// ensure that they are subsequently mapped to themselves.
-		for (int i = 0; i < nStates; ++i) {
-			binding[i] = i;
-		}
-
-		// Second, go through and eliminate all unreachable states and compact
-		// the automaton down, whilst updating reachable one oneStepUndo
-		// information accordingly.
-		int j = pivot;
-
-		for (int i = pivot; i < nStates; ++i) {
-			if (reachable[i]) {
-				Automaton.State ith = automaton.get(i);
-				binding[i] = j;
-				reachable[i] = false;
-				reachable[j] = true;
-				automaton.set(j++, ith);
-			}
-		}
-
-		if (j < nStates) {			
-			// Ok, some compaction actually occurred; therefore follow through
-			// and update all states accordingly.
-			nStates = j;
-			automaton.resize(nStates); // will nullify all deleted states
-
-			// Update mapping and oneStepUndo for *all* states
-			for (int i = 0; i != nStates; ++i) {
-				Automaton.State state = automaton.get(i);
-				if(state != null) {
-					state.remap(binding);
-				}
-			}
-
-			// Update mapping for all roots
-			for (int i = 0; i != nRoots; ++i) {
-				int root = automaton.getRoot(i);
-				if (root >= 0) {
-					automaton.setRoot(i, binding[root]);
 				}
 			}
 		}
