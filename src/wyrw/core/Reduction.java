@@ -89,7 +89,7 @@ public class Reduction extends AbstractRewrite {
 		return new State(automaton, array);
 	}
 	
-	public static class Activation extends AbstractActivation {
+	public final static class Activation extends AbstractActivation {
 
 		/**
 		 * The inference rule that this activation will apply.

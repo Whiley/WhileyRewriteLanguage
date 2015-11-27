@@ -494,6 +494,7 @@ public final class Automaton {
 				}
 			}
 
+			// FIXME: see #19 about this as it needs to be eliminated.
 			minimise(binding);
 
 			return to >= 0 ? binding[to] : to;
