@@ -180,7 +180,7 @@ public class Automata {
 		}
 	}
 
-	private final static class IntStack {
+	public final static class IntStack {
 		public final int[] items;
 		public int size;
 
@@ -190,6 +190,11 @@ public class Automata {
 
 		public void push(int item) {
 			items[size++] = item;
+		}
+		
+		public int pop() {
+			size = size - 1;
+			return items[size];
 		}
 	}
 
@@ -411,7 +416,7 @@ public class Automata {
 	 * Check whether two states are equivalent in a given automaton and current
 	 * set of equivalences.
 	 */
-	private final static boolean equivalent(Automaton automaton,
+	public final static boolean equivalent(Automaton automaton,
 			BinaryMatrix equivs, int i, int j) {
 		Automaton.State is = automaton.get(i);
 		Automaton.State js = automaton.get(j);
