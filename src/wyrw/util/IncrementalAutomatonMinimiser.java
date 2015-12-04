@@ -102,7 +102,8 @@ public class IncrementalAutomatonMinimiser {
 		collapseEquivalentParents(from, to, fromParents);
 		
 		// NOTE: what about fresh states added which were immediately
-		// unreachable. For example, they were added to implement a check.
+		// unreachable. For example, they were added to implement a check. We
+		// could eliminate these by compacting "above the pivot".
 	}
 	
 	public void substitute(int source, int from, int to) {
@@ -110,16 +111,30 @@ public class IncrementalAutomatonMinimiser {
 	}
 	
 	/**
+	 * <p>
 	 * The given state has become unreachable. Therefore, we need to recursively
 	 * eliminate any children of this state which are also eliminated as a
-	 * result.
+	 * result. To do this, we remove this state from the parents set of its
+	 * children. If any of those children now have an empty set of parents, then
+	 * we recursively eliminate them as well
+	 * </p>
+	 * <p>
+	 * <b>NOTE:</b> The major problem with this algorithm is, likely many
+	 * garbage collection algorithms, that it does not guarantee to eliminate
+	 * all unreachable states. In particular, no state involved in a cycle will
+	 * be reclaimed as it will always have at least one parent. <i>At this
+	 * stage, it remains to determine how best to resolve this problem. One
+	 * solution maybe to record the "dominator" for each state. That way, you
+	 * could tell whether a state which was unreachable dominated a child and,
+	 * hence, it too was unreachable.</i>
+	 * </p>
 	 * 
 	 * @param index
 	 *            Index of the state in question.
 	 */
 	private void eliminateUnreachableState(int index) {
 		
-		// FIXME: What about cycles ????
+		// FIXME: figure out solution for cycles (see above).
 		
 		Automaton.State state = automaton.get(index);
 		// First, check whether state already removed
@@ -168,9 +183,12 @@ public class IncrementalAutomatonMinimiser {
 	}
 		
 	/**
-	 * Add all parents from another state to a given state. There are two cases:
-	 * for a fresh state, recursively update parents for all fresh children; for
-	 * existing state, simply update the parent info.
+	 * <p>
+	 * Add all parents from another state to a given state (which may
+	 * potentially be fresh). For a fresh state, there may be one or more fresh
+	 * children who need to have their parent sets initialised as well. In such
+	 * case, we recursively traverse them initialising their parent sets.
+	 * </p>
 	 * 
 	 * @param child
 	 *            --- state for which we are updating the parent information.
@@ -215,15 +233,19 @@ public class IncrementalAutomatonMinimiser {
 	}
 	
 	/**
-	 * Add a new parent to a given state. There are two cases: for a fresh
-	 * state, recursively update parents for all fresh children; for existing
-	 * state, simply update the parent info.
+	 * <p>
+	 * Add a new parent to a given state (which may potentially be fresh). For a
+	 * fresh state, there may be one or more fresh children who need to have
+	 * their parent sets initialised as well. In such case, we recursively
+	 * traverse them initialising their parent sets.
+	 * </p>
 	 * 
 	 * @param child
 	 *            --- state for which we are updating the parent information.
 	 * @param parent
 	 *            --- single parent for the child in question
 	 */
+
 	private void addParent(int child, int parent) {
 		ParentInfo pinfo = parents.get(child);
 		if(pinfo == null) {
@@ -261,6 +283,12 @@ public class IncrementalAutomatonMinimiser {
 		pinfo.add(parent);
 	}
 	
+	/**
+	 * 
+	 * @param from
+	 * @param to
+	 * @param fromParents
+	 */
 	private void collapseEquivalentParents(int from, int to, ParentInfo fromParents) {
 		ParentInfo toParents = parents.get(to);
 		// FIXME: the following operations are linear (or worse) in the size of the
