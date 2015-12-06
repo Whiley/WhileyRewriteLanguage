@@ -93,14 +93,27 @@ public class IncrementalAutomatonMinimiser {
 	 * @param from
 	 * @param to
 	 */
-	public void rewrite(int from, int to) {
-		// First, update parent information
+	public void rewrite(int from, int to, int pivot) {
 		ParentInfo fromParents = parents.get(from);
-		eliminateUnreachableState(from);
-		addAllParents(to,fromParents);
-		// Second, collapse any equivalent vertices
-		collapseEquivalentParents(from, to, fromParents);
-		
+		if(to > Automaton.K_VOID) {			
+			expandParents();
+			// Copy parents to target state
+			addAllParents(to,fromParents);
+			// Eliminate all states made unreachable
+			eliminateUnreachableState(from);
+			// Eliminate unreachable states above pivot
+			eliminateUnreachableAbovePivot(pivot);
+			// Second, collapse any equivalent vertices			
+			// TODO: only collapse if target state is new?		
+			collapseEquivalentParents(from, to, fromParents);	
+			
+			// TODO: resize to first unused slot above pivot; this should help
+			// prevent the automaton grow too quickly.
+			
+		} else {
+			eliminateUnreachableState(from);
+		}
+				
 		// NOTE: what about fresh states added which were immediately
 		// unreachable. For example, they were added to implement a check. We
 		// could eliminate these by compacting "above the pivot".
@@ -157,11 +170,13 @@ public class IncrementalAutomatonMinimiser {
 				Automaton.Collection c = (Automaton.Collection) state;
 				for (int i = 0; i != c.size(); ++i) {
 					int child = c.get(i);
-					ParentInfo pinfo = parents.get(child);
-					pinfo.remove(index);
-					if (pinfo.size() == 0) {
-						// this state is now unreachable as well
-						eliminateUnreachableState(child);
+					if(child > Automaton.K_VOID) {
+						ParentInfo pinfo = parents.get(child);
+						pinfo.remove(index);
+						if (pinfo.size() == 0) {
+							// this state is now unreachable as well
+							eliminateUnreachableState(child);
+						}
 					}
 				}
 				return;
@@ -170,7 +185,7 @@ public class IncrementalAutomatonMinimiser {
 				// terms
 				Automaton.Term t = (Automaton.Term) state;
 				int child = t.contents;
-				if(child != Automaton.K_VOID) {
+				if(child > Automaton.K_VOID) {
 					ParentInfo pinfo = parents.get(child);
 					pinfo.remove(index);
 					if (pinfo.size() == 0) {
@@ -182,6 +197,15 @@ public class IncrementalAutomatonMinimiser {
 		}
 	}
 		
+	private void eliminateUnreachableAbovePivot(int pivot) {
+		for(int i=pivot;i!=automaton.nStates();++i) {
+			Automaton.State s = automaton.get(i);
+			if(s != null && parents.get(i) == null) {
+				automaton.set(i, null);
+			} 
+		}
+	}
+	
 	/**
 	 * <p>
 	 * Add all parents from another state to a given state (which may
@@ -216,7 +240,10 @@ public class IncrementalAutomatonMinimiser {
 				// lots of children :)
 				Automaton.Collection c = (Automaton.Collection) state;
 				for (int i = 0; i != c.size(); ++i) {
-					addParent(child,c.get(i));
+					int grandChild = c.get(i);
+					if(grandChild > Automaton.K_VOID) {
+						addParent(child,grandChild);
+					}
 				}
 				break;
 			}
@@ -224,7 +251,7 @@ public class IncrementalAutomatonMinimiser {
 				// terms
 				Automaton.Term t = (Automaton.Term) state;
 				int grandChild = t.contents;
-				if(grandChild != Automaton.K_VOID) {
+				if(grandChild > Automaton.K_VOID) {
 					addParent(child,grandChild);
 				}
 			}
@@ -246,7 +273,7 @@ public class IncrementalAutomatonMinimiser {
 	 *            --- single parent for the child in question
 	 */
 
-	private void addParent(int child, int parent) {
+	private void addParent(int parent, int child) {
 		ParentInfo pinfo = parents.get(child);
 		if(pinfo == null) {
 			// This is a fresh state
@@ -267,7 +294,10 @@ public class IncrementalAutomatonMinimiser {
 				// lots of children :)
 				Automaton.Collection c = (Automaton.Collection) state;
 				for (int i = 0; i != c.size(); ++i) {
-					addParent(child,c.get(i));
+					int grandChild = c.get(i);
+					if(grandChild > Automaton.K_VOID) {
+						addParent(child,grandChild);
+					}
 				}
 				break;
 			}
@@ -275,7 +305,7 @@ public class IncrementalAutomatonMinimiser {
 				// terms
 				Automaton.Term t = (Automaton.Term) state;
 				int grandChild = t.contents;
-				if(grandChild != Automaton.K_VOID) {
+				if(grandChild > Automaton.K_VOID) {
 					addParent(child,grandChild);
 				}
 			}
@@ -284,6 +314,40 @@ public class IncrementalAutomatonMinimiser {
 	}
 	
 	/**
+	 * Ensure there are enough entries in the parents array after a rewrite has occurred.
+	 */
+	private void expandParents() {
+		int size = parents.size();
+		int nStates = automaton.nStates();
+		while(size < nStates) {
+			parents.add(null);
+			size = size + 1;
+		}
+	}
+	
+	/**
+	 * <p>
+	 * Given two states, collapse any parents which are now equivalent. To do
+	 * this, we compare each parent from the first state against all from the
+	 * second, etc. Whenever an equivalent pairing is found we must then explore
+	 * those parents of the pairing, etc.
+	 * </p>
+	 * <p>
+	 * The algorithm works using a worklist containing candidates pairs which
+	 * should be explored. The algorithm also maintains the set of states now
+	 * determined as equivalent. This is necessary when comparing two states to
+	 * determine if they are equivalent, as their equivalence may depend on two
+	 * child states which were previously determined as equivalent. Furthermore,
+	 * in the end, we need to determine which states to actually collapse.
+	 * </p>
+	 * <p>
+	 * <b>NOTE:</b> the algorithm potential does more work than necessary. This
+	 * is because it can end up retesting some candidate pairs more than once,
+	 * though this is perhaps a rather unusual case to encounter. To avoid this,
+	 * we could additionally record candidate pairs which are shown *not* to be
+	 * equivalent (but, actually, this might fail if children are subsequently
+	 * found to be equivalent).
+	 * </p>
 	 * 
 	 * @param from
 	 * @param to
@@ -293,24 +357,26 @@ public class IncrementalAutomatonMinimiser {
 		ParentInfo toParents = parents.get(to);
 		// FIXME: the following operations are linear (or worse) in the size of the
 		// automaton. Therefore, we want to eliminate this by using a more compact representation.
-		IntStack worklist = new IntStack(fromParents.size * toParents.size);
+		IntStack worklist = new IntStack(2 * (fromParents.size * toParents.size));
 		BinaryMatrix equivs = initialiseEquivalences();
 		equivs.set(from, to, true);
 				
-		// First, determine all the equivalent parents (if any)
+		// First, determine all potentially equivalent parents (if any)
 		addCandidatesToWorklist(worklist,equivs,fromParents,toParents);
 		
-		// Second, iterate until all equivalences are determined
-		while(worklist.size > 0) {
+		// Second, iterate until all equivalences are determined. When an
+		// equivalent is found recursively explore their parents. 
+		while (worklist.size > 0) {
 			to = worklist.pop();
 			from = worklist.pop();
-			if(!equivs.get(from, to) && equivalent(automaton,equivs,from,to)) {
+			if (!equivs.get(from, to) && equivalent(automaton, equivs, from, to)) {
 				equivs.set(from, to, true);
-				addCandidatesToWorklist(worklist,equivs,parents.get(from),parents.get(to));
-			}			
+				addCandidatesToWorklist(worklist, equivs, parents.get(from), parents.get(to));
+			}
 		}
 		
-		// Third, collapse equivalent states
+		// Third, collapse all states now determined to be equivalent.
+		collapseEquivalences(equivs);
 		
 	}
 	
@@ -322,13 +388,14 @@ public class IncrementalAutomatonMinimiser {
 		return equivs;
 	}
 	
-	private void addCandidatesToWorklist(IntStack worklist, BinaryMatrix equivs, ParentInfo fromParents, ParentInfo toParents) {
+	private void addCandidatesToWorklist(IntStack worklist, BinaryMatrix equivs, ParentInfo fromParents,
+			ParentInfo toParents) {
 		int[] from_parents = fromParents.parents;
 		int[] to_parents = toParents.parents;
-		for(int i=0;i!=fromParents.size;++i) {
+		for (int i = 0; i != fromParents.size; ++i) {
 			int from_parent = from_parents[i];
 			Automaton.State from_state = automaton.get(from_parent);
-			for(int j=0;j!=toParents.size;++j) {
+			for (int j = 0; j != toParents.size; ++j) {
 				int to_parent = to_parents[j];
 				Automaton.State to_state = automaton.get(to_parent);
 				if (!equivs.get(from_parent, to_parent) && from_state.kind == to_state.kind) {
@@ -338,10 +405,63 @@ public class IncrementalAutomatonMinimiser {
 					worklist.push(from_parent);
 					worklist.push(to_parent);
 				}
-			}	
+			}
 		}
 	}
 	
+	/**
+	 * <p>
+	 * Collapse all states which are determined to be equivalent together. This
+	 * modifies the automaton in a potentially destructive fashion. The main
+	 * objective is to do this in time proportional to the number of equivalent
+	 * states (roughly speaking) rather than in time proportional to the size of
+	 * the automaton. This function does not compact the automaton, however.
+	 * Hence, there will be states remaining which are "null".
+	 * </p>
+	 * <p>
+	 * To collapse a set of equivalent states, we must remap their parent states
+	 * to now refer to the set's representative state. We must also update the
+	 * parent references for any child states. Finally, we delete (i.e. set to
+	 * null) any states which equivalent to some other representative.
+	 * </p>
+	 * 
+	 * @param equivs
+	 */
+	private void collapseEquivalences(BinaryMatrix equivs) {
+		// FIXME: these operations are all linear in size of automaton!
+		
+		int[] mapping = new int[automaton.nStates()];
+		
+		// Determine representative states for all equivalence classes. In other
+		// words, for any set of equivalent states, determine which one of them
+		// is to be the "representative" which remains.
+		determineRepresentativeStates(automaton,equivs,mapping);
+		
+		// Collapse all equivalence classes to a single state. Thus, the
+		// representative for each class remains and all references to members of
+		// that class are redirected to the representative.
+		collapseEquivalenceClasses(automaton,mapping);
+		
+		// Finally, update the parent links for all vertices and delete those
+		// records for states which are eliminated.
+		int nStates = automaton.nStates();
+		for (int i = 0; i != nStates; ++i) {
+			if(mapping[i] != i) {
+				// This state has be subsumed by another state which was the
+				// representative for its equivalence class. Therefore, the
+				// state must now be unreachable.
+				parents.set(i, null);
+			} else {
+				ParentInfo pinfo = parents.get(i);
+				if(pinfo != null) {
+					// This state is the unique representative for its equivalence
+					// class. Therefore, retain it whilst remapping all of its
+					// references appropriately.
+					pinfo.remap(mapping);
+				}
+			}
+		}
+	}
 	
 	/**
 	 * Compute the parents for each state in the automaton from scratch. This is
@@ -360,7 +480,7 @@ public class IncrementalAutomatonMinimiser {
 		//
 		ArrayList<ParentInfo> parents = new ArrayList<ParentInfo>();
 		for (int i = 0; i != automaton.nStates(); ++i) {
-			parents.set(i, new ParentInfo(counts[i]));
+			parents.add(new ParentInfo(counts[i]));
 		}
 		//
 		for (int i = 0; i != automaton.nStates(); ++i) {
@@ -394,7 +514,9 @@ public class IncrementalAutomatonMinimiser {
 			Automaton.Collection c = (Automaton.Collection) state;
 			for(int i=0;i!=c.size();++i) {
 				int child = c.get(i);
-				counts[child]++;				
+				if(child > Automaton.K_VOID) {
+					counts[child]++;
+				}
 			}
 			break;
 		}
@@ -402,7 +524,7 @@ public class IncrementalAutomatonMinimiser {
 			// terms
 			Automaton.Term t = (Automaton.Term) state;
 			int child = t.contents;
-			if(child != Automaton.K_VOID) {
+			if(child > Automaton.K_VOID) {
 				counts[child]++;
 			}
 		}	
@@ -434,7 +556,9 @@ public class IncrementalAutomatonMinimiser {
 			Automaton.Collection c = (Automaton.Collection) state;
 			for(int i=0;i!=c.size();++i) {
 				int child = c.get(i);
-				parents.get(child).add(parent);
+				if(child > Automaton.K_VOID) {
+					parents.get(child).add(parent);
+				}
 			}
 			break;
 		}
@@ -442,7 +566,7 @@ public class IncrementalAutomatonMinimiser {
 			// terms
 			Automaton.Term t = (Automaton.Term) state;
 			int child = t.contents;
-			if(child != Automaton.K_VOID) {
+			if(child > Automaton.K_VOID) {
 				parents.get(child).add(parent);
 			}
 		}		
@@ -474,7 +598,7 @@ public class IncrementalAutomatonMinimiser {
 		}
 		
 		public void add(int parent) {
-			int index = indexOf(parents,parent);
+			int index = indexOf(parents,size,parent);
 			if(index == -1) {
 				ensureCapacity((size+1)*1);
 				parents[size++] = parent;
@@ -486,17 +610,23 @@ public class IncrementalAutomatonMinimiser {
 			ensureCapacity(size+pinfo_size);
 			for(int i=0;i!=pinfo_size;++i) {
 				int parent = pinfo.parents[i];
-				if(indexOf(parents,parent) == -1) {
+				if(indexOf(parents,size,parent) == -1) {
 					parents[size++] = parent;
 				}
 			}
 		}
 		
 		public void remove(int parent) {
-			int index = indexOf(parents,parent);
+			int index = indexOf(parents,size,parent);
 			if(index != -1) {
 				System.arraycopy(parents, index+1, parents, index, size - (index+1));
 				size = size - 1;
+			}
+		}
+		
+		public void remap(int[] mapping) {
+			for (int i = 0; i != size; ++i) {
+				parents[i] = mapping[parents[i]];
 			}
 		}
 		
@@ -506,13 +636,14 @@ public class IncrementalAutomatonMinimiser {
 			}
 		}
 		
-		private static int indexOf(int[] array, int element) {
-			for(int i=0;i!=array.length;++i) {
+		private static int indexOf(int[] array, int size, int element) {
+			for(int i=0;i!=size;++i) {
 				if(array[i] == element) {
 					return i;
 				}
 			}
 			return -1;
 		}
+				
 	}
 }

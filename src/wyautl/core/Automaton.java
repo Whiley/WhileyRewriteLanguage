@@ -495,7 +495,7 @@ public final class Automaton {
 			}
 
 			// FIXME: see #19 about this as it needs to be eliminated.
-			minimise(binding);
+			// minimise(binding);
 
 			return to >= 0 ? binding[to] : to;
 		} else {
@@ -1691,35 +1691,7 @@ public final class Automaton {
 		BinaryMatrix equivs = new BinaryMatrix(nStates, nStates, true);
 		Automata.determineEquivalenceClasses(this, equivs);
 		Automata.determineRepresentativeStates(this, equivs, binding);
-
-		// First, remap states so all references are to the unique
-		// representatives.
-		boolean changed = false;
-		for (int i = 0; i != nStates; ++i) {
-			if(binding[i] != i) {
-				// This state has be subsumed by another state which was the
-				// representative for its equivalence class. Therefore, the
-				// state must now be unreachable.
-				states[i] = null;
-				changed = true;
-			} else if(states[i] != null) {
-				// This state is the unique representative for its equivalence
-				// class. Therefore, retain it whilst remapping all of its
-				// references appropriately.
-				states[i].remap(binding);
-			}
-		}
-
-		// Second, remap the root references so that they also refer to the
-		// unique representatives.
-		for (int i = 0; i != nRoots; ++i) {
-			int root = roots[i];
-			if (root >= 0) {
-				roots[i] = binding[root];
-			}
-		}
-		
-		return changed;
+		return Automata.collapseEquivalenceClasses(this, binding);
 	}
 
 	/**
