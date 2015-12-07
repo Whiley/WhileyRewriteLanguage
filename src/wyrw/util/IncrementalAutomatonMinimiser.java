@@ -95,7 +95,7 @@ public class IncrementalAutomatonMinimiser {
 	 */
 	public void rewrite(int from, int to, int pivot) {
 		ParentInfo fromParents = parents.get(from);
-		if(to > Automaton.K_VOID) {			
+		if(to > Automaton.K_VOID) {
 			expandParents();
 			// Copy parents to target state
 			addAllParents(to,fromParents);
@@ -105,8 +105,7 @@ public class IncrementalAutomatonMinimiser {
 			eliminateUnreachableAbovePivot(pivot);
 			// Second, collapse any equivalent vertices			
 			// TODO: only collapse if target state is new?		
-			collapseEquivalentParents(from, to, fromParents);	
-			
+			collapseEquivalentParents(from, to, fromParents);				
 			// TODO: resize to first unused slot above pivot; this should help
 			// prevent the automaton grow too quickly.
 			
@@ -148,7 +147,6 @@ public class IncrementalAutomatonMinimiser {
 	private void eliminateUnreachableState(int index) {
 		
 		// FIXME: figure out solution for cycles (see above).
-		
 		Automaton.State state = automaton.get(index);
 		// First, check whether state already removed
 		if (state != null) {
@@ -173,7 +171,7 @@ public class IncrementalAutomatonMinimiser {
 					if(child > Automaton.K_VOID) {
 						ParentInfo pinfo = parents.get(child);
 						pinfo.remove(index);
-						if (pinfo.size() == 0) {
+						if (pinfo.size() == 0 && !isRoot(child)) {
 							// this state is now unreachable as well
 							eliminateUnreachableState(child);
 						}
@@ -188,7 +186,7 @@ public class IncrementalAutomatonMinimiser {
 				if(child > Automaton.K_VOID) {
 					ParentInfo pinfo = parents.get(child);
 					pinfo.remove(index);
-					if (pinfo.size() == 0) {
+					if (pinfo.size() == 0 && !isRoot(child)) {
 						// this state is now unreachable as well
 						eliminateUnreachableState(child);
 					}
@@ -197,6 +195,16 @@ public class IncrementalAutomatonMinimiser {
 		}
 	}
 		
+	private boolean isRoot(int index) {
+		int nRoots = automaton.nRoots();
+		for(int i=0;i!=nRoots;++i) {
+			if(automaton.getRoot(i) == index) {
+				return true;
+			}
+		}
+		return false;
+	}
+	
 	private void eliminateUnreachableAbovePivot(int pivot) {
 		for(int i=pivot;i!=automaton.nStates();++i) {
 			Automaton.State s = automaton.get(i);
@@ -630,6 +638,15 @@ public class IncrementalAutomatonMinimiser {
 			}
 		}
 		
+		public String toString() {
+			String r = "";
+			for(int i=0;i!=size;++i) {
+				if(i != 0) { r += ","; }
+				r = r + i;
+			}
+			return "{" + r + "}";
+		}
+		
 		private void ensureCapacity(int capacity) {
 			if(parents.length < capacity) {
 				parents = Arrays.copyOf(parents, capacity);
@@ -643,7 +660,6 @@ public class IncrementalAutomatonMinimiser {
 				}
 			}
 			return -1;
-		}
-				
+		}						
 	}
 }
