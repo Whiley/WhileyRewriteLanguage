@@ -170,10 +170,12 @@ public class IncrementalAutomatonMinimiser {
 					int child = c.get(i);
 					if(child > Automaton.K_VOID) {
 						ParentInfo pinfo = parents.get(child);
-						pinfo.remove(index);
-						if (pinfo.size() == 0 && !isRoot(child)) {
-							// this state is now unreachable as well
-							eliminateUnreachableState(child);
+						if(pinfo != null) {
+							pinfo.remove(index);
+							if (pinfo.size() == 0 && !isRoot(child)) {
+								// this state is now unreachable as well
+								eliminateUnreachableState(child);
+							}
 						}
 					}
 				}
