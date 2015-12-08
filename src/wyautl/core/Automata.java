@@ -375,6 +375,8 @@ public class Automata {
 				// map this state to the unique representative (which may be
 				// itself if it is the unique rep).
 				mapping[i] = classRep;
+			} else {
+				mapping[i] = i;
 			}
 		}
 	}

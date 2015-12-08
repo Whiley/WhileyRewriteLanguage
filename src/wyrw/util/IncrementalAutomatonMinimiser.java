@@ -102,8 +102,24 @@ public class IncrementalAutomatonMinimiser {
 			rewriteParents(from, to);
 			// Eliminate all states made unreachable
 			eliminateUnreachableState(from);
+
+			for(int i=0;i!=parents.size();++i) {
+				ParentInfo pinfo = parents.get(i);
+				if(pinfo != null) {
+					for(int j=0;j!=pinfo.size;++j) {
+						if(automaton.get(pinfo.get(j)) == null) {
+							// FIXME: how do we get here? Shouldn't it be impossible
+							// that any parents of a candidate state are unreachable?
+							throw new RuntimeException("*** ERROR(2)");
+						}
+					}
+				}
+			}
+			
 			// Eliminate unreachable states above pivot
 			eliminateUnreachableAbovePivot(pivot);
+			
+			
 			// Second, collapse any equivalent vertices			
 			// TODO: only collapse if target state is new?		
 			collapseEquivalentParents(from, to, fromParents);				
@@ -465,7 +481,7 @@ public class IncrementalAutomatonMinimiser {
 		// words, for any set of equivalent states, determine which one of them
 		// is to be the "representative" which remains.
 		determineRepresentativeStates(automaton,equivs,mapping);
-		
+
 		// Collapse all equivalence classes to a single state. Thus, the
 		// representative for each class remains and all references to members of
 		// that class are redirected to the representative.
