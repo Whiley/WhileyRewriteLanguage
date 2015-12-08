@@ -94,11 +94,12 @@ public class IncrementalAutomatonMinimiser {
 	 * @param to
 	 */
 	public void rewrite(int from, int to, int pivot) {
-		ParentInfo fromParents = parents.get(from);
 		if(to > Automaton.K_VOID) {
+			ParentInfo fromParents = parents.get(from);
+			//
 			expandParents();
 			// Copy parents to target state
-			addAllParents(to,fromParents);
+			rewriteParents(from, to);
 			// Eliminate all states made unreachable
 			eliminateUnreachableState(from);
 			// Eliminate unreachable states above pivot
@@ -218,10 +219,11 @@ public class IncrementalAutomatonMinimiser {
 	
 	/**
 	 * <p>
-	 * Add all parents from another state to a given state (which may
-	 * potentially be fresh). For a fresh state, there may be one or more fresh
-	 * children who need to have their parent sets initialised as well. In such
-	 * case, we recursively traverse them initialising their parent sets.
+	 * After a rewrite has occurred from one state to another, shift over
+	 * parents from one state to another. If the target state is fresh then we
+	 * need to create appropriate parents. Furthermore, there may be one or more
+	 * fresh children who need to have their parent sets initialised as well. In
+	 * such case, we recursively traverse them initialising their parent sets.
 	 * </p>
 	 * 
 	 * @param child
@@ -229,44 +231,56 @@ public class IncrementalAutomatonMinimiser {
 	 * @param parent
 	 *            --- single parent for the child in question
 	 */
-	private void addAllParents(int child, ParentInfo allParents) {
-		ParentInfo pinfo = parents.get(child);
-		if(pinfo == null) {
-			// This is a fresh state
-			pinfo = new ParentInfo(allParents.size);	
-			parents.set(child, pinfo);
-			Automaton.State state = automaton.get(child);
-			//
-			switch (state.kind) {
-			case Automaton.K_BOOL:
-			case Automaton.K_INT:
-			case Automaton.K_REAL:
-			case Automaton.K_STRING:
-				// no children
-				break;
-			case Automaton.K_LIST:
-			case Automaton.K_SET:
-			case Automaton.K_BAG: {
-				// lots of children :)
-				Automaton.Collection c = (Automaton.Collection) state;
-				for (int i = 0; i != c.size(); ++i) {
-					int grandChild = c.get(i);
-					if(grandChild > Automaton.K_VOID) {
-						addParent(child,grandChild);
-					}
-				}
-				break;
-			}
-			default:
-				// terms
-				Automaton.Term t = (Automaton.Term) state;
-				int grandChild = t.contents;
-				if(grandChild > Automaton.K_VOID) {
-					addParent(child,grandChild);
-				}
-			}
+	private void rewriteParents(int from, int to) {
+		ParentInfo fromParents = parents.get(from);
+		ParentInfo toParents = parents.get(to);
+		if(toParents == null) {
+			parents.set(to, fromParents);
+			addParentToChildren(to);
+		} else {
+			toParents.addAll(fromParents);
 		}		
-		pinfo.addAll(allParents);
+		rewriteParentsOfChildren(from,to);
+	}
+	
+	/**
+	 * Rewrite parents of children of "from" state so that "from" is rewritten
+	 * to "to".
+	 * 
+	 * @param from
+	 * @param to
+	 */
+	private void rewriteParentsOfChildren(int from, int to) {
+		Automaton.State state = automaton.get(from);
+		//
+		switch (state.kind) {
+		case Automaton.K_BOOL:
+		case Automaton.K_INT:
+		case Automaton.K_REAL:
+		case Automaton.K_STRING:
+			// no children
+			break;
+		case Automaton.K_LIST:
+		case Automaton.K_SET:
+		case Automaton.K_BAG: {
+			// lots of children :)
+			Automaton.Collection c = (Automaton.Collection) state;
+			for (int i = 0; i != c.size(); ++i) {
+				int grandChild = c.get(i);
+				if(grandChild > Automaton.K_VOID) {
+					parents.get(grandChild).replace(from, to);
+				}
+			}
+			break;
+		}
+		default:
+			// terms
+			Automaton.Term t = (Automaton.Term) state;
+			int grandChild = t.contents;
+			if(grandChild > Automaton.K_VOID) {
+				parents.get(grandChild).replace(from, to);
+			}
+		}	
 	}
 	
 	/**
@@ -282,47 +296,55 @@ public class IncrementalAutomatonMinimiser {
 	 * @param parent
 	 *            --- single parent for the child in question
 	 */
-
 	private void addParent(int parent, int child) {
 		ParentInfo pinfo = parents.get(child);
 		if(pinfo == null) {
 			// This is a fresh state
 			pinfo = new ParentInfo(1);	
 			parents.set(child, pinfo);
-			Automaton.State state = automaton.get(child);
-			//
-			switch (state.kind) {
-			case Automaton.K_BOOL:
-			case Automaton.K_INT:
-			case Automaton.K_REAL:
-			case Automaton.K_STRING:
-				// no children
-				break;
-			case Automaton.K_LIST:
-			case Automaton.K_SET:
-			case Automaton.K_BAG: {
-				// lots of children :)
-				Automaton.Collection c = (Automaton.Collection) state;
-				for (int i = 0; i != c.size(); ++i) {
-					int grandChild = c.get(i);
-					if(grandChild > Automaton.K_VOID) {
-						addParent(child,grandChild);
-					}
-				}
-				break;
-			}
-			default:
-				// terms
-				Automaton.Term t = (Automaton.Term) state;
-				int grandChild = t.contents;
-				if(grandChild > Automaton.K_VOID) {
-					addParent(child,grandChild);
-				}
-			}
+			addParentToChildren(child);
 		}		
 		pinfo.add(parent);
 	}
 	
+	/**
+	 * Add a given state as a parent for all its children. The assumption is
+	 * that this state would be fresh.
+	 * 
+	 * @param child
+	 */
+	private void addParentToChildren(int child) {
+		Automaton.State state = automaton.get(child);
+		//
+		switch (state.kind) {
+		case Automaton.K_BOOL:
+		case Automaton.K_INT:
+		case Automaton.K_REAL:
+		case Automaton.K_STRING:
+			// no children
+			break;
+		case Automaton.K_LIST:
+		case Automaton.K_SET:
+		case Automaton.K_BAG: {
+			// lots of children :)
+			Automaton.Collection c = (Automaton.Collection) state;
+			for (int i = 0; i != c.size(); ++i) {
+				int grandChild = c.get(i);
+				if(grandChild > Automaton.K_VOID) {
+					addParent(child,grandChild);
+				}
+			}
+			break;
+		}
+		default:
+			// terms
+			Automaton.Term t = (Automaton.Term) state;
+			int grandChild = t.contents;
+			if(grandChild > Automaton.K_VOID) {
+				addParent(child,grandChild);
+			}
+		}	
+	}
 	/**
 	 * Ensure there are enough entries in the parents array after a rewrite has occurred.
 	 */
@@ -369,7 +391,6 @@ public class IncrementalAutomatonMinimiser {
 		// automaton. Therefore, we want to eliminate this by using a more compact representation.
 		IntStack worklist = new IntStack(2 * (fromParents.size * toParents.size));
 		BinaryMatrix equivs = initialiseEquivalences();
-		equivs.set(from, to, true);
 				
 		// First, determine all potentially equivalent parents (if any)
 		addCandidatesToWorklist(worklist,equivs,fromParents,toParents);
@@ -386,8 +407,7 @@ public class IncrementalAutomatonMinimiser {
 		}
 		
 		// Third, collapse all states now determined to be equivalent.
-		collapseEquivalences(equivs);
-		
+		collapseEquivalences(equivs);		
 	}
 	
 	private BinaryMatrix initialiseEquivalences() {
@@ -438,8 +458,7 @@ public class IncrementalAutomatonMinimiser {
 	 * @param equivs
 	 */
 	private void collapseEquivalences(BinaryMatrix equivs) {
-		// FIXME: these operations are all linear in size of automaton!
-		
+		// FIXME: these operations are all linear in size of automaton!		
 		int[] mapping = new int[automaton.nStates()];
 		
 		// Determine representative states for all equivalence classes. In other
@@ -638,6 +657,18 @@ public class IncrementalAutomatonMinimiser {
 			for (int i = 0; i != size; ++i) {
 				parents[i] = mapping[parents[i]];
 			}
+		}
+		
+		public void replace(int from, int to) {
+			for(int i=0;i!=size;++i) {
+				if(parents[i] == from) {
+					parents[i] = to;
+				}
+			}
+		}
+		
+		public boolean contains(int parent) {			
+			return indexOf(parents,size,parent) != -1;
 		}
 		
 		public String toString() {
