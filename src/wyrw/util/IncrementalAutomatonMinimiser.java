@@ -177,12 +177,17 @@ public class IncrementalAutomatonMinimiser {
 				for (int i = 0; i != c.size(); ++i) {
 					int child = c.get(i);
 					if(child > Automaton.K_VOID) {						
-						ParentInfo pinfo = parents.get(child);						
-						pinfo.removeAll(parent);
-						if (pinfo.size() == 0 && !isRoot(child)) {
-							// this state is now unreachable as well
-							eliminateUnreachableState(child);
-						}						
+						ParentInfo pinfo = parents.get(child);
+						// Check whether we have already eliminated this child
+						// state. This can arise for a list or bag when multiple
+						// occurrences of the same child are present.
+						if(pinfo != null) {
+							pinfo.removeAll(parent);
+							if (pinfo.size() == 0 && !isRoot(child)) {
+								// this state is now unreachable as well
+								eliminateUnreachableState(child);
+							}					
+						}
 					}
 				}
 				return;
