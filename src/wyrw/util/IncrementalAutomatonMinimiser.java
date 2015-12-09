@@ -70,6 +70,9 @@ public class IncrementalAutomatonMinimiser {
 	public IncrementalAutomatonMinimiser(Automaton automaton) {
 		this.automaton = automaton;
 		this.parents = determineParents(automaton);
+		checkParentsInvariant();
+		checkReachabilityInvariant();
+		checkChildrenInvariant();
 	}
 	
 	/**
@@ -94,7 +97,8 @@ public class IncrementalAutomatonMinimiser {
 	 * @param to
 	 */
 	public void rewrite(int from, int to, int pivot) {
-		System.out.println("REWRITE " + from + " => " + to);
+		//System.out.println("REWRITE " + from + " => " + to + " (pivot: " + pivot + ")");
+		
 		if(to > Automaton.K_VOID) {
 			ParentInfo fromParents = parents.get(from);			
 			//
@@ -104,10 +108,10 @@ public class IncrementalAutomatonMinimiser {
 			//			
 			// Eliminate all states made unreachable
 			eliminateUnreachableState(from);
-
+			
 			// Eliminate unreachable states above pivot
-			eliminateUnreachableAbovePivot(pivot);
-
+			eliminateUnreachableAbovePivot(pivot);			
+			
 			// Second, collapse any equivalent vertices			
 			collapseEquivalentParents(from, to, fromParents);				
 			// TODO: resize to first unused slot above pivot; this should help
@@ -117,8 +121,8 @@ public class IncrementalAutomatonMinimiser {
 		}
 		
 		checkParentsInvariant();
-		checkChildrenInvariant();
-		checkReachabilityInvariant();		
+		checkReachabilityInvariant();
+		checkChildrenInvariant();			
 		
 		// NOTE: what about fresh states added which were immediately
 		// unreachable. For example, they were added to implement a check. We
@@ -157,8 +161,7 @@ public class IncrementalAutomatonMinimiser {
 		Automaton.State state = automaton.get(parent);
 		// First, check whether state already removed
 		if (state != null) {			
-			// Second, physically remove the state in question
-			System.out.println("Eliminating state " + parent);
+			// Second, physically remove the state in question			
 			automaton.set(parent, null);
 			parents.set(parent, null);
 			// Third, update parental information for any children
@@ -184,7 +187,7 @@ public class IncrementalAutomatonMinimiser {
 						if(pinfo != null) {
 							pinfo.removeAll(parent);
 							if (pinfo.size() == 0 && !isRoot(child)) {
-								// this state is now unreachable as well
+								// this state is now unreachable as well								
 								eliminateUnreachableState(child);
 							}					
 						}
@@ -200,7 +203,7 @@ public class IncrementalAutomatonMinimiser {
 					ParentInfo pinfo = parents.get(child);
 					pinfo.removeAll(parent);
 					if (pinfo.size() == 0 && !isRoot(child)) {
-						// this state is now unreachable as well
+						// this state is now unreachable as well						
 						eliminateUnreachableState(child);
 					}
 				}
@@ -445,20 +448,23 @@ public class IncrementalAutomatonMinimiser {
 		// records for states which are eliminated.
 		int nStates = automaton.nStates();
 		for (int i = 0; i != nStates; ++i) {
-			if(mapping[i] != i) {
-				// This state has be subsumed by another state which was the
-				// representative for its equivalence class. Therefore, the
-				// state must now be unreachable.
-				parents.set(i, null);
-			} else {
-				ParentInfo pinfo = parents.get(i);
-				if(pinfo != null) {
-					// This state is the unique representative for its equivalence
-					// class. Therefore, retain it whilst remapping all of its
-					// references appropriately.
-					pinfo.remap(mapping);
-				}
-			}
+			//
+			ParentInfo pinfo = parents.get(i);
+			if(pinfo != null) {
+				// First, remap the parents of this state.
+				pinfo.remap(mapping);
+				// Second, if this state isn't the unique representative for its
+				// equivalence class then move over all parents into that of the
+				// unique representative. 
+				if(mapping[i] != i) {
+					// This state has be subsumed by another state which was the
+					// representative for its equivalence class. Therefore, the
+					// state must now be unreachable.
+					ParentInfo repInfo = parents.get(mapping[i]);
+					repInfo.addAll(pinfo);				
+					parents.set(i, null);
+				} 
+			}		
 		}
 	}
 	
@@ -470,6 +476,9 @@ public class IncrementalAutomatonMinimiser {
 		for(int i=0;i!=parents.size();++i) {
 			ParentInfo pinfo = parents.get(i);
 			if(pinfo != null) {
+				if(automaton.get(i) == null) {
+					throw new RuntimeException("*** INVALID PARENTS INVARIANT");
+				}
 				for(int j=0;j!=pinfo.size();++j) {
 					int parent = pinfo.get(j);
 					checkIsChildOf(parent,i);
@@ -553,6 +562,11 @@ public class IncrementalAutomatonMinimiser {
 		return new int[0];
 	}
 	
+	/**
+	 * Check that the reachability invariant holds. The reachability invariant
+	 * states that all non-null states in either the automaton or the parents
+	 * array are reachable from one or more roots.  
+	 */
 	private void checkReachabilityInvariant() {
 		boolean[] reachable = new boolean[automaton.nStates()];
 		for(int i=0;i!=automaton.nRoots();++i) {			
@@ -600,12 +614,12 @@ public class IncrementalAutomatonMinimiser {
 			Automaton.State state = automaton.get(index);
 			if (state instanceof Automaton.Term) {
 				Automaton.Term term = (Automaton.Term) state;
-				if (term.contents != Automaton.K_VOID) {
+				if (term.contents != Automaton.K_VOID) {					
 					findReachable(automaton, reachable, term.contents);
 				}
 			} else if (state instanceof Automaton.Collection) {
 				Automaton.Collection compound = (Automaton.Collection) state;
-				for (int i = 0; i != compound.size(); ++i) {
+				for (int i = 0; i != compound.size(); ++i) {					
 					findReachable(automaton, reachable, compound.get(i));
 				}
 			}
