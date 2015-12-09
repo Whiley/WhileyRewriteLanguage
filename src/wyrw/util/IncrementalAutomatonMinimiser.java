@@ -94,6 +94,7 @@ public class IncrementalAutomatonMinimiser {
 	 * @param to
 	 */
 	public void rewrite(int from, int to, int pivot) {
+		System.out.println("REWRITE " + from + " => " + to);
 		if(to > Automaton.K_VOID) {
 			ParentInfo fromParents = parents.get(from);			
 			//
@@ -107,19 +108,17 @@ public class IncrementalAutomatonMinimiser {
 			// Eliminate unreachable states above pivot
 			eliminateUnreachableAbovePivot(pivot);
 
-			checkParentsInvariant();
-			
 			// Second, collapse any equivalent vertices			
-			// TODO: only collapse if target state is new?		
 			collapseEquivalentParents(from, to, fromParents);				
 			// TODO: resize to first unused slot above pivot; this should help
-			// prevent the automaton grow too quickly.
-			
+			// prevent the automaton grow too quickly.			
 		} else {
 			eliminateUnreachableState(from);
 		}
 		
 		checkParentsInvariant();
+		checkChildrenInvariant();
+		checkReachabilityInvariant();		
 		
 		// NOTE: what about fresh states added which were immediately
 		// unreachable. For example, they were added to implement a check. We
@@ -159,6 +158,7 @@ public class IncrementalAutomatonMinimiser {
 		// First, check whether state already removed
 		if (state != null) {			
 			// Second, physically remove the state in question
+			System.out.println("Eliminating state " + parent);
 			automaton.set(parent, null);
 			parents.set(parent, null);
 			// Third, update parental information for any children
@@ -511,6 +511,105 @@ public class IncrementalAutomatonMinimiser {
 			}	
 		}
 		throw new RuntimeException("*** INVALID PARENTS INVARIANT: " + child + " NOT CHILD OF " + parent);
+	}
+	
+	private void checkChildrenInvariant() {
+		for(int i=0;i!=automaton.nStates();++i) {
+			int[] children = children(i);
+			for(int j=0;j!=children.length;++j) {
+				if(automaton.get(children[j]) == null) {
+					throw new RuntimeException("*** INVALID CHILDREN INVARIANT " + i + " " + children[j]);
+				}
+			}
+		}
+	}
+	
+	private int[] children(int parent) {
+		Automaton.State state = automaton.get(parent);
+		//
+		if(state != null) {
+			switch (state.kind) {
+			case Automaton.K_BOOL:
+			case Automaton.K_INT:
+			case Automaton.K_REAL:
+			case Automaton.K_STRING:
+				// no children
+				break;
+			case Automaton.K_LIST:
+			case Automaton.K_SET:
+			case Automaton.K_BAG: {
+				Automaton.Collection c = (Automaton.Collection) state;
+				return c.toArray();				
+			}
+			default:
+				// terms
+				Automaton.Term t = (Automaton.Term) state;
+				if(t.contents > Automaton.K_VOID) {
+					return new int[]{t.contents};
+				}
+			}	
+		}
+		
+		return new int[0];
+	}
+	
+	private void checkReachabilityInvariant() {
+		boolean[] reachable = new boolean[automaton.nStates()];
+		for(int i=0;i!=automaton.nRoots();++i) {			
+			findReachable(automaton,reachable,automaton.getRoot(i));
+		}
+		for(int i=0;i!=automaton.nStates();++i) {
+			if(reachable[i] && automaton.get(i) == null) {
+				throw new RuntimeException("*** INVALID REACHABILITY INVARIANT(1), STATE: " + i);
+			} else if(reachable[i] && automaton.get(i) == null) {
+				throw new RuntimeException("*** INVALID REACHABILITY INVARIANT(2), STATE: " + i);
+			} else if(!reachable[i] && automaton.get(i) != null){
+				throw new RuntimeException("*** INVALID REACHABILITY INVARIANT(3), STATE: " + i);
+			} else if(!reachable[i] && parents.get(i) != null){
+				throw new RuntimeException("*** INVALID REACHABILITY INVARIANT(4), STATE: " + i);
+			}
+		}
+	}
+	
+	/**
+	 * Visit all states reachable from a given starting state in the given
+	 * automaton. In doing this, states which are visited are marked and,
+	 * furthermore, those which are "headers" are additionally identified. A
+	 * header state is one which is the target of a back-edge in the directed
+	 * graph reachable from the start state.
+	 *
+	 * @param automaton
+	 *            --- automaton to traverse.
+	 * @param reachable
+	 *            --- states marked with false are those which have not been
+	 *            visited.
+	 * @param index
+	 *            --- state to begin traversal from.
+	 * @return
+	 */
+	public static void findReachable(Automaton automaton, boolean[] reachable,
+			int index) {
+		if (index < 0) {
+			return;
+		} else if (reachable[index]) {
+			// Already visited, so terminate here
+			return;
+		} else {
+			// Not previously visited, so mark now and traverse any children
+			reachable[index] = true;
+			Automaton.State state = automaton.get(index);
+			if (state instanceof Automaton.Term) {
+				Automaton.Term term = (Automaton.Term) state;
+				if (term.contents != Automaton.K_VOID) {
+					findReachable(automaton, reachable, term.contents);
+				}
+			} else if (state instanceof Automaton.Collection) {
+				Automaton.Collection compound = (Automaton.Collection) state;
+				for (int i = 0; i != compound.size(); ++i) {
+					findReachable(automaton, reachable, compound.get(i));
+				}
+			}
+		}
 	}
 	
 	/**
