@@ -360,7 +360,7 @@ public class IncrementalAutomatonMinimiser {
 		ParentInfo toParents = parents.get(to);
 		// FIXME: the following operations are linear (or worse) in the size of the
 		// automaton. Therefore, we want to eliminate this by using a more compact representation.
-		IntStack worklist = new IntStack(2 * (fromParents.size * toParents.size));
+		Worklist worklist = new Worklist(2 * (fromParents.size * toParents.size));
 		BinaryMatrix equivs = initialiseEquivalences();
 				
 		// First, determine all potentially equivalent parents (if any)
@@ -390,7 +390,7 @@ public class IncrementalAutomatonMinimiser {
 		return equivs;
 	}
 	
-	private void addCandidatesToWorklist(IntStack worklist, BinaryMatrix equivs, ParentInfo fromParents,
+	private void addCandidatesToWorklist(Worklist worklist, BinaryMatrix equivs, ParentInfo fromParents,
 			ParentInfo toParents) {
 		int[] from_parents = fromParents.parents;
 		int[] to_parents = toParents.parents;
@@ -881,4 +881,27 @@ public class IncrementalAutomatonMinimiser {
 			return -1;
 		}			
 	}
+	
+
+	public final static class Worklist {
+		public int[] items;
+		public int size;
+
+		public Worklist(int size) {
+			this.items = new int[size];
+		}
+
+		public void push(int item) {
+			if(size == items.length) {
+				items = Arrays.copyOf(items, items.length*2);
+			}
+			items[size++] = item;
+		}
+		
+		public int pop() {
+			size = size - 1;
+			return items[size];
+		}
+	}
+
 }
