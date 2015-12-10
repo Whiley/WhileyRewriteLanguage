@@ -19,7 +19,7 @@ public class Reductions {
 	public static void minimiseAndReduce(Automaton automaton, int maxSteps, ReductionRule[] reductions,
 			Comparator<Rewrite.Activation> comparator) {
 		automaton.minimise();
-		automaton.compact(0);
+		automaton.compact(0);		
 		reduceOver(automaton, 0, maxSteps, reductions, comparator);
 	}
 	
@@ -56,9 +56,7 @@ public class Reductions {
 					//
 					changed = true;
 					break;
-				} else {
-					automaton.resize(pivot);
-				}
+				} 
 			}
 		}
 		// At this point, the automaton may not be compacted but it should be

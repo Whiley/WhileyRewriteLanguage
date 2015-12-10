@@ -397,7 +397,7 @@ public class Automata {
 		int nStates = automaton.nStates();
 
 		for (int i = 0; i != nStates; ++i) {
-			if(binding[i] != i) {
+			if(binding[i] != i) {				
 				// This state has be subsumed by another state which was the
 				// representative for its equivalence class. Therefore, the
 				// state must now be unreachable.
