@@ -480,14 +480,14 @@ public class IncrementalAutomatonMinimiser {
 		// completely pack above the pivot. That's because, by exploiting the
 		// parent information we can quickly remap all states.
 		int i = automaton.nStates();
-		
-		while(i > pivot) {
-			if(automaton.get(i-1) != null) {
+
+		while (i > pivot) {
+			if (automaton.get(i - 1) != null) {
 				break;
 			}
-			i = i - 1;			
+			i = i - 1;
 		}
-		
+
 		automaton.resize(i);
 	}
 	
