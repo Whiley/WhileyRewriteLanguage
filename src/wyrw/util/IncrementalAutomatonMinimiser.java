@@ -122,9 +122,18 @@ public class IncrementalAutomatonMinimiser {
 		checkParentsInvariant();
 		checkChildrenInvariant();					
 		
-		// NOTE: what about fresh states added which were immediately
-		// unreachable. For example, they were added to implement a check. We
-		// could eliminate these by compacting "above the pivot".
+		int count = 0;
+		for(int i=0;i!=automaton.nStates();++i) {
+			if(automaton.get(i) == null) { 
+				count++;
+			}
+		}
+		double ratio = ((double) count) / automaton.nStates();
+		System.out.println("RATIO: " + count + " / " + automaton.nStates() + " = " + ratio);
+		
+		compactAbovePivot(pivot);
+		// TODO: get rid of any empty states at end
+		// TODO: compact automaton over time
 	}
 	
 	public void substitute(int source, int from, int to) {
@@ -464,6 +473,22 @@ public class IncrementalAutomatonMinimiser {
 				} 
 			}		
 		}
+	}
+	
+	private void compactAbovePivot(int pivot) {
+		// TODO: this could be way more aggressive. Specifically, we can
+		// completely pack above the pivot. That's because, by exploiting the
+		// parent information we can quickly remap all states.
+		int i = automaton.nStates();
+		
+		while(i > pivot) {
+			if(automaton.get(i-1) != null) {
+				break;
+			}
+			i = i - 1;			
+		}
+		
+		automaton.resize(i);
 	}
 	
 	/**
