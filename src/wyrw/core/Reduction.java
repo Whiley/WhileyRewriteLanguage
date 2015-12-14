@@ -26,6 +26,9 @@ public class Reduction extends AbstractRewrite {
 		cache = new HashMap<Automaton,Integer>();
 	}
 
+	/**
+	 * Automaton should be minimised
+	 */
 	public int initialise(Automaton automaton) {
 		states.add(probe(automaton));
 		return states.size()-1;
@@ -40,7 +43,6 @@ public class Reduction extends AbstractRewrite {
 		int to;
 		if (target != Automaton.K_VOID && from != target) {
 			// Rule application produced an updated automaton
-			automaton.minimise(); // needed?
 			automaton.compact(0);
 			to = addState(automaton);
 			if(to >= states.size()) {
@@ -87,7 +89,7 @@ public class Reduction extends AbstractRewrite {
 		return new State(automaton, array);
 	}
 	
-	public static class Activation extends AbstractActivation {
+	public final static class Activation extends AbstractActivation {
 
 		/**
 		 * The inference rule that this activation will apply.

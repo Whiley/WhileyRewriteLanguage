@@ -340,8 +340,8 @@ public class ConsoleRewriter {
 					e.printStackTrace();
 				} catch (IllegalArgumentException e) {
 					e.printStackTrace();
-				} catch (InvocationTargetException e) {
-					throw (Error) e.getCause();
+				} catch (InvocationTargetException e) {				
+					printFullStackTrace(e);
 				}
 			}
 		}
@@ -478,4 +478,14 @@ public class ConsoleRewriter {
 			}
 		}
 	}	
+	
+	private static void printFullStackTrace(Throwable e) {
+		while(e != null) {
+			System.out.println(e.getMessage());
+			for(StackTraceElement ste : e.getStackTrace()) {
+				System.out.println("\t" + ste.toString());
+			}
+			e = e.getCause();
+		}
+	}
 }

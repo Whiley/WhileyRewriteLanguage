@@ -83,6 +83,9 @@ public class TypeExpansion {
 				expandTypeTests(id.file, terms, macros);
 			} else if (d instanceof SpecFile.RewriteDecl) {
 				SpecFile.RewriteDecl td = (SpecFile.RewriteDecl) d;
+				if(td.requires != null) {
+					expandTypeTests(td.requires,spec,macros);
+				}
 				for(SpecFile.RuleDecl rd : td.rules) {
 					expandTypeTests(rd,spec,terms,macros);
 				}
