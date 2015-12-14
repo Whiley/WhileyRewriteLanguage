@@ -48,7 +48,7 @@ public class Inference extends AbstractRewrite {
 
 	@Override
 	public int initialise(Automaton automaton) {
-		Reductions.minimiseAndReduce(automaton,MAX_REDUCTIONS,reductions,comparator);		
+		Reductions.minimiseAndReduce(automaton,MAX_REDUCTIONS,schema,reductions,comparator);
 		states.add(probeReachableInferences(automaton,0));
 		return states.size()-1;
 	}
@@ -147,12 +147,12 @@ public class Inference extends AbstractRewrite {
 			automaton.push(root);
 			automaton.minimise();
 			automaton.compact(0);
-			Reductions.reduceOver(automaton, start, MAX_REDUCTIONS, reductions, comparator);
+			Reductions.reduceOver(automaton, start, MAX_REDUCTIONS, schema, reductions, comparator);
 			return automaton.pop();
 		} else {
 			//automaton.minimise();
 			automaton.compact(0);
-			Reductions.reduceOver(automaton, 0, MAX_REDUCTIONS, reductions, comparator);
+			Reductions.reduceOver(automaton, 0, MAX_REDUCTIONS, schema, reductions, comparator);
 			return Integer.MIN_VALUE; // to ensure this isn't used
 		}
 	}

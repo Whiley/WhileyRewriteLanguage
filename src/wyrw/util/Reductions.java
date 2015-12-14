@@ -5,6 +5,7 @@ import java.util.Arrays;
 import java.util.Comparator;
 
 import wyautl.core.Automaton;
+import wyautl.core.Schema;
 import wyrw.core.Reduction;
 import wyrw.core.ReductionRule;
 import wyrw.core.Rewrite;
@@ -12,23 +13,23 @@ import wyrw.core.Rewrite;
 public class Reductions {
 	
 	
-	public static void minimiseAndReduce(Automaton automaton, int maxSteps, ReductionRule... reductions) {
-		minimiseAndReduce(automaton,maxSteps,reductions,null);
+	public static void minimiseAndReduce(Automaton automaton, int maxSteps, Schema schema, ReductionRule... reductions) {
+		minimiseAndReduce(automaton,maxSteps,schema,reductions,null);
 	}
 	
-	public static void minimiseAndReduce(Automaton automaton, int maxSteps, ReductionRule[] reductions,
+	public static void minimiseAndReduce(Automaton automaton, int maxSteps, Schema schema, ReductionRule[] reductions,
 			Comparator<Rewrite.Activation> comparator) {
 		automaton.minimise();
 		automaton.compact(0);		
-		reduceOver(automaton, 0, maxSteps, reductions, comparator);
+		reduceOver(automaton, 0, maxSteps,schema,reductions, comparator);
 	}
 	
-	public static void reduceOver(Automaton automaton, int start, int maxSteps, ReductionRule... reductions) {
-		reduceOver(automaton,start,maxSteps,reductions,null);
+	public static void reduceOver(Automaton automaton, int start, int maxSteps, Schema schema, ReductionRule... reductions) {
+		reduceOver(automaton,start,maxSteps,schema,reductions,null);
 	}
 		
-	public static void reduce(Automaton automaton, int maxSteps, ReductionRule... reductions) {
-		reduceOver(automaton,0,maxSteps,reductions,null);
+	public static void reduce(Automaton automaton, int maxSteps, Schema schema, ReductionRule... reductions) {
+		reduceOver(automaton,0,maxSteps,schema,reductions,null);
 	}
 	
 	/**
@@ -36,7 +37,7 @@ public class Reductions {
 	 * 
 	 * @param automaton
 	 */
-	public static void reduceOver(Automaton automaton, int start, int maxSteps, ReductionRule[] reductions,
+	public static void reduceOver(Automaton automaton, int start, int maxSteps, Schema schema, ReductionRule[] reductions,
 			Comparator<Rewrite.Activation> comparator) {
 		// Now, attempt to reduce as much as possible
 		IncrementalAutomatonMinimiser inc = new IncrementalAutomatonMinimiser(automaton);
