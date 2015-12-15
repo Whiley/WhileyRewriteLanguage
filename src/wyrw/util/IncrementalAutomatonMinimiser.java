@@ -125,11 +125,12 @@ public class IncrementalAutomatonMinimiser {
 
 		//compact(freeList);
 		inefficientCompact();
-		
-//		checkReachabilityInvariant();
-//		checkParentsInvariant();
-//		checkChildrenInvariant();
-//		checkCompactionInvariant();
+
+		//checkMinimisedInvariant();
+		//checkReachabilityInvariant();
+		//checkParentsInvariant();
+		//checkChildrenInvariant();
+		//checkCompactionInvariant();
 	}
 
 	public void substitute(int source, int from, int to) {
@@ -584,6 +585,20 @@ public class IncrementalAutomatonMinimiser {
 			if(automaton.getRoot(i) == from) {
 				automaton.setRoot(i, to);
 			}
+		}
+	}
+
+	/**
+	 * Check that the automaton is correctly minimised. This is done by cloning
+	 * the automaton and then minimising that using the standard algorithm.
+	 * After this, we compare the two.
+	 */
+	private void checkMinimisedInvariant() {
+		Automaton copy = new Automaton(automaton);
+		copy.minimise();
+		copy.compact(0);
+		if(!automaton.equals(copy)) {
+			throw new RuntimeException("*** INVALID MINIMISED INVARIANT");
 		}
 	}
 
