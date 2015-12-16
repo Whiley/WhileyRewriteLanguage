@@ -23,11 +23,16 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-package wyautl.rw;
+package wyrw.util;
 
 import java.util.BitSet;
+import java.util.Comparator;
 
 import wyautl.core.Automaton;
+import wyrw.core.InferenceRule;
+import wyrw.core.ReductionRule;
+import wyrw.core.Rewrite;
+import wyrw.core.RewriteRule;
 
 /**
  * Represents the potential activation of a given rewrite rule. An activation
@@ -39,37 +44,44 @@ import wyautl.core.Automaton;
  * @author David J. Pearce
  *
  */
-public final class Activation {
-
-	/**
-	 * The rewrite rule that this activation will apply.
-	 */
-	final RewriteRule rule;
+public abstract class AbstractActivation implements Rewrite.Activation {
 
 	/**
 	 * The complete set of states upon which this activation depends. This must
 	 * include all those identified in the mapping.
 	 */
-	private final BitSet dependencies;
-
+	protected final BitSet dependencies;
+	
 	/**
 	 * Temporary state used by the rule to control the rewrite. For example,
 	 * this might match rewrite variables with states. In essence, the state is
 	 * a continuation which gives enough information for the rewrite to pick up
 	 * immediately from where it got to during probing.
 	 */
-	private final int[] state;
+	protected final int[] state;
 
-	public Activation(RewriteRule rule, BitSet dependencies, int[] state) {
-		this.rule = rule;
+	public AbstractActivation(BitSet dependencies, int[] state) {		
 		this.dependencies = dependencies;
 		this.state = state;
 	}
 
-	public int root() {
+	/**
+	 * Return the target of this activation. That is the automaton state
+	 * potentially being rewritten by this activation.
+	 * 
+	 * @return
+	 */
+	@Override
+	public int target() {
 		return state[0];
 	}
 
+	public abstract RewriteRule rule();
+
+	public int[] binding() {
+		return state;
+	}
+	
 	/**
 	 * Returns the complete set of states upon which this activation depends.
 	 * Any changes to those states necessarily invalidates this activation, and
@@ -98,7 +110,52 @@ public final class Activation {
 	 *
 	 * @return The state that was rewriten to, or K_VOID is no such state.
 	 */
-	public int apply(Automaton automaton) {
-		return rule.apply(automaton, state);
+	public abstract int apply(Automaton automaton);
+	
+	/**
+	 * A simple comparator for comparing activations based primarily on rule
+	 * rank.
+	 *
+	 * @param <AbstractActivation>
+	 */
+
+	/**
+	 * A standard comparator for comparing rewrite rules based on a given
+	 * annotation. The annotation itself must be of integer type, and rules are
+	 * simply compared using this directory.
+	 *
+	 * @author David J. Pearce
+	 *
+	 */
+	public static final class RankComparator
+			implements Comparator<Rewrite.Activation> {
+
+		private final String annotation;
+		
+		public RankComparator(String annotation) {
+			this.annotation = annotation;
+		}
+		
+		@Override
+		public int compare(Rewrite.Activation o1, Rewrite.Activation o2) {
+			Object r1_ann = o1.rule().annotation(annotation);
+			Object r2_ann = o2.rule().annotation(annotation);
+			
+			if(r1_ann == null) {
+				return r2_ann == null ? 0 : 1;
+			} else if(r2_ann == null) {
+				return -1;
+			}
+			
+			int r1_rank = (int) r1_ann;
+			int r2_rank = (int) r2_ann;
+			if (r1_rank < r2_rank) {
+				return -1;
+			} else if (r1_rank > r2_rank) {
+				return 1;
+			}
+
+			return 0;
+		}
 	}
 }

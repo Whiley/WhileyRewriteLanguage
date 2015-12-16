@@ -28,6 +28,7 @@ package wyautl.core;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.BitSet;
+import java.util.Comparator;
 
 import wyautl.core.Automaton.State;
 import wyautl.util.BinaryMatrix;
@@ -179,7 +180,7 @@ public class Automata {
 		}
 	}
 
-	private final static class IntStack {
+	public final static class IntStack {
 		public final int[] items;
 		public int size;
 
@@ -189,6 +190,11 @@ public class Automata {
 
 		public void push(int item) {
 			items[size++] = item;
+		}
+		
+		public int pop() {
+			size = size - 1;
+			return items[size];
 		}
 	}
 
@@ -350,7 +356,7 @@ public class Automata {
 	 * mapping from states to their representatives. This function does not
 	 * modify the automaton.
 	 */
-	final static void determineRepresentativeStates(Automaton automaton,
+	public final static void determineRepresentativeStates(Automaton automaton,
 			BinaryMatrix equivs, int[] mapping) {
 		final int size = automaton.nStates();
 
@@ -369,10 +375,58 @@ public class Automata {
 				// map this state to the unique representative (which may be
 				// itself if it is the unique rep).
 				mapping[i] = classRep;
+			} else {
+				mapping[i] = i;
 			}
 		}
 	}
 
+	/**
+	 * Collapse all states according to a given mapping. Any state which is not
+	 * mapped to itself is deleted, and all references to it are redirected to
+	 * its representative as determined by the mapping.
+	 * 
+	 * @param automaton
+	 * @param binding
+	 * @return
+	 */
+	public final static boolean collapseEquivalenceClasses(Automaton automaton, int[] binding) {
+		// First, remap states so all references are to the unique
+		// representatives.
+		boolean changed = false;
+		int nStates = automaton.nStates();
+
+		for (int i = 0; i != nStates; ++i) {
+			if(binding[i] != i) {				
+				// This state has be subsumed by another state which was the
+				// representative for its equivalence class. Therefore, the
+				// state must now be unreachable.
+				automaton.set(i,null);
+				changed = true;
+			} else {
+				Automaton.State state = automaton.get(i);
+				if(state != null) {
+					// This state is the unique representative for its equivalence
+					// class. Therefore, retain it whilst remapping all of its
+					// references appropriately.				
+					state.remap(binding);
+				}
+			}
+		}
+
+		// Second, remap the root references so that they also refer to the
+		// unique representatives.
+		int nRoots = automaton.nRoots();
+		for (int i = 0; i != nRoots; ++i) {
+			int root = automaton.getRoot(i);
+			if (root >= 0) {
+				automaton.setRoot(i, binding[root]);
+			}
+		}
+		
+		return changed;
+	}
+	
 	/**
 	 * Determine which states are equivalent using a binary matrix of size N*N,
 	 * where N is the number of states in the given automaton. This method is
@@ -410,7 +464,7 @@ public class Automata {
 	 * Check whether two states are equivalent in a given automaton and current
 	 * set of equivalences.
 	 */
-	private final static boolean equivalent(Automaton automaton,
+	public final static boolean equivalent(Automaton automaton,
 			BinaryMatrix equivs, int i, int j) {
 		Automaton.State is = automaton.get(i);
 		Automaton.State js = automaton.get(j);
@@ -1126,7 +1180,7 @@ public class Automata {
 			}
 		}
 	}
-
+	
 	/**
 	 * Generate a new automaton from a given automaton which is isomorphic to
 	 * the original, but where nodes in the first have been relocated to

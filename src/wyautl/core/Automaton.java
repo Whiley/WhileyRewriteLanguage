@@ -494,7 +494,8 @@ public final class Automaton {
 				}
 			}
 
-			minimise(binding);
+			// FIXME: see #19 about this as it needs to be eliminated.
+			// minimise(binding);
 
 			return to >= 0 ? binding[to] : to;
 		} else {
@@ -626,24 +627,24 @@ public final class Automaton {
 	 * (unless the automaton was already minimised).
 	 * </p>
 	 */
-	public void minimise() {
-		minimise(new int[nStates]);
+	public boolean minimise() {
+		return minimise(new int[nStates]);
 	}
 
 	/**
 	 * <p>
-	 * Compact the automaton by eliminating garbage states, and compacting those
-	 * remaining down. Garbage states are those not reachable from any marked
-	 * root state. This is similar, in many ways, to the notion of
-	 * "mark and sweep" garbage collection.
+	 * Compact the automaton by eliminating garbage states above the pivot
+	 * point, and compacting those remaining down. Garbage states are those not
+	 * reachable from any marked root state. This is similar, in many ways, to
+	 * the notion of "mark and sweep" garbage collection.
 	 * </p>
 	 * <p>
 	 * <b>NOTE:</b> all references which were valid beforehand may not be
 	 * invalidated (unless the automaton was already compacted).
 	 * </p>
 	 */
-	public void compact() {
-		compact(new int[nStates]);
+	public void compact(int pivot) {
+		compact(new int[nStates],pivot);
 	}
 
 	/**
@@ -663,8 +664,8 @@ public final class Automaton {
 	 *            their representative states in the compacted automaton. This
 	 *            array must be at least of size <code>nStates</code>.
 	 */
-	public void compact(int[] binding) {
-		Automata.eliminateUnreachableStates(this,0,nStates,binding);
+	public void compact(int[] binding, int pivot) {
+		Automata.eliminateUnreachableStates(this,pivot,nStates,binding);
 
 		int j=0;
 		for(int i=0;i!=nStates;++i) {
@@ -797,10 +798,10 @@ public final class Automaton {
 	 * Mark a given state. This means it is treated specially, and will never be
 	 * deleted from the automaton as a result of garbage collection.
 	 *
-	 * @param root
+	 * @param state
 	 * @return
 	 */
-	public void setRoot(int index, int root) {
+	public void setRoot(int index, int state) {
 		// First, create space if necessary
 		if (index >= roots.length) {
 			int[] nroots = nRoots == 0 ? new int[DEFAULT_NUM_ROOTS]
@@ -809,10 +810,33 @@ public final class Automaton {
 			roots = nroots;
 		}
 		// Second set the marker!
-		roots[index] = root;
+		roots[index] = state;
 		nRoots = Math.max(index + 1, nRoots);
 	}
-
+	
+	/**
+	 * Push a new root onto the automaton
+	 * 
+	 * @param state
+	 * @return
+	 */
+	public int push(int state) {		
+		int r = nRoots;
+		setRoot(r, state);
+		return r;
+	}
+	
+	/**
+	 * Pop the last root of the automaton
+	 * 
+	 * @param state
+	 * @return
+	 */
+	public int pop() {
+		nRoots = nRoots - 1;		
+		return roots[nRoots];
+	}
+	
 	/**
 	 * Get the given marked node.
 	 *
@@ -858,12 +882,13 @@ public final class Automaton {
 	/**
 	 * Determine the hashCode of an automaton.
 	 */
+	@Override
 	public int hashCode() {
-		int r = 0;
+		int r = nStates;
 		for (int i = 0; i != nStates; ++i) {
 			State ith = states[i];
 			if(ith != null) {
-				r = r + ith.hashCode();
+				r = r ^ ith.hashCode();
 			}
 		}
 		return r;
@@ -877,6 +902,7 @@ public final class Automaton {
 	 * whether two types are structurally isomorphic, using the
 	 * <code>equivalentTo(t1,t2)</code> and/or <code>isomorphicTo</code> methods.
 	 */
+	@Override
 	public boolean equals(Object o) {
 		if (o instanceof Automaton) {
 			Automaton a = (Automaton) o;
@@ -904,7 +930,7 @@ public final class Automaton {
 		}
 		return false;
 	}
-
+	
 	/**
 	 * Return a simple string representation of an automaton. Generally
 	 * speaking, this is only useful for debugging purposes. In order to get a
@@ -1044,6 +1070,7 @@ public final class Automaton {
 			}
 		}
 
+		@Override
 		public boolean equals(final Object o) {
 			if (o instanceof Term) {
 				Term t = (Term) o;
@@ -1052,8 +1079,9 @@ public final class Automaton {
 			return false;
 		}
 
+		@Override
 		public int hashCode() {
-			return contents * kind;
+			return contents ^ kind;
 		}
 
 		public String toString() {
@@ -1085,6 +1113,7 @@ public final class Automaton {
 			return false;
 		}
 
+		@Override
 		public boolean equals(final Object o) {
 			if (o instanceof Constant) {
 				Constant t = (Constant) o;
@@ -1097,8 +1126,9 @@ public final class Automaton {
 			return this;
 		}
 
+		@Override
 		public int hashCode() {
-			return value.hashCode() * kind;
+			return value.hashCode() ^ kind;
 		}
 
 		public String toString() {
@@ -1304,6 +1334,7 @@ public final class Automaton {
 			return false;
 		}
 
+		@Override
 		public boolean equals(final Object o) {
 			if (o instanceof Collection) {
 				Collection t = (Collection) o;
@@ -1320,6 +1351,7 @@ public final class Automaton {
 			return false;
 		}
 
+		@Override
 		public int hashCode() {
 			int hashCode = kind;
 			for (int i = 0; i != length; ++i) {
@@ -1655,35 +1687,11 @@ public final class Automaton {
 	 *            their representative states in the minimised automaton. This
 	 *            array must be at least of size <code>nStates</code>.
 	 */
-	private void minimise(int[] binding) {
+	private boolean minimise(int[] binding) {
 		BinaryMatrix equivs = new BinaryMatrix(nStates, nStates, true);
 		Automata.determineEquivalenceClasses(this, equivs);
 		Automata.determineRepresentativeStates(this, equivs, binding);
-
-		// First, remap states so all references are to the unique
-		// representatives.
-		for (int i = 0; i != nStates; ++i) {
-			if(binding[i] != i) {
-				// This state has be subsumed by another state which was the
-				// representative for its equivalence class. Therefore, the
-				// state must now be unreachable.
-				states[i] = null;
-			} else if(states[i] != null) {
-				// This state is the unique representative for its equivalence
-				// class. Therefore, retain it whilst remapping all of its
-				// references appropriately.
-				states[i].remap(binding);
-			}
-		}
-
-		// Second, remap the root references so that they also refer to the
-		// unique representatives.
-		for (int i = 0; i != nRoots; ++i) {
-			int root = roots[i];
-			if (root >= 0) {
-				roots[i] = binding[root];
-			}
-		}
+		return Automata.collapseEquivalenceClasses(this, binding);
 	}
 
 	/**

@@ -23,24 +23,46 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-package wyrl.util;
+package wyrw.core;
 
-import wyautl.core.*;
-import wyautl.rw.RewriteRule;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Map;
+
+import wyautl.core.Automaton;
 import wyrl.core.Pattern;
 
-public abstract class AbstractRewriteRule implements RewriteRule {
+public interface RewriteRule {
 
 	/**
-	 * The pattern that this rewrite rule will match against.
+	 * Get the pattern object that describes what this rule will match against.
+	 * More specifically, any state which matches this pattern is guaranteed to
+	 * produce at least one activation from probing. This is useful for creating
+	 * dispatch tables for more efficient probing of automaton states.
+	 *
+	 * @return
 	 */
-	private final Pattern.Term pattern;
-
-	public AbstractRewriteRule(Pattern.Term pattern) {
-		this.pattern = pattern;
-	}
-
-	public Pattern.Term pattern() {
-		return pattern;
-	}
+	public Pattern.Term pattern();
+	
+	/**
+	 * Get the annotations associated with this rewrite rule. Annotations are
+	 * used-supplied fields that provide some kind of supplementary information.
+	 * For example, one could use a "@Name" annotation to give each rule a
+	 * unique name.  Similarly, one can provide a description for each rule.
+	 * 
+	 * @param name
+	 * @return
+	 */
+	public Map<String,Object> annotations();
+	
+	/**
+	 * Get a single annotation associated with this rewrite rule. Annotations are
+	 * used-supplied fields that provide some kind of supplementary information.
+	 * For example, one could use a "@Name" annotation to give each rule a
+	 * unique name.  Similarly, one can provide a description for each rule.
+	 * 
+	 * @param name
+	 * @return
+	 */
+	public Object annotation(String n);
 }

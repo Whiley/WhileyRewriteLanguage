@@ -23,53 +23,29 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-package wyautl.rw;
+package wyrw.core;
 
 import wyautl.core.Automaton;
 
 /**
- * A rewrite rule guaranteed to reduce the Automaton (in some sense). Typically,
- * this means it is guaranteed to reduce the number of states in the automaton
- * by at least one (although it can often be many more). The following
- * illustrates such a rule:
- *
- * <pre>
- * reduce Not(Not(* x)):
- *    => x
- * </pre>
- *
- * This rewrite rule is guaranteed to reduce the automaton by exactly two
- * states. As another example, consider the following:
- *
- * <pre>
- * reduce And{Bool b, BExpr... xs}:
- *    => False, if b == False
- *    => True, if |xs| == 0
- *    => And (xs)
- * </pre>
- *
- * This rewrite rule is guaranteed to reduce the automaton by at least one or
- * more states. However, some rewrite rules do not necessarily reduce the
- * automaton's size. For example, consider the following rule which distributes
- * logical <code>And</code> over logical <code>Or</code>:
- *
- * <pre>
- * reduce And{Or{BExpr... xs}, BExpr... ys}:
- *    => let ys = { And(x ++ ys) | x in xs }
- *       in Or(ys)
- * </pre>
- *
- * Observe that this rule may <i>increase</i> the overall number of states in
- * the automaton. For example, the logical expresion <code>X && (Y || Z)</code>
- * becomes <code>(X && Y) || (X && Z)</code>, which contains one additional
- * state. However, observe also that this rule cannot be applied indefinitely
- * and, for this reason, is considered to "reduce" the automaton (provided there
- * is no other rule which can "undo" what this rule does, leading to an infinite
- * rewrite cycle).
+ * Represents the (abstract) mechanism for controlling the rewriting of a given
+ * automaton under a given set of rules. Different implementation of this
+ * interface are possible, and will have different performance characteristics.
  *
  * @author David J. Pearce
  *
  */
-public interface ReductionRule extends RewriteRule {
-
+public interface Rewriter {
+	
+	/**
+	 * Reset the rewriter to a given state in the rewrite.
+	 */
+	public void reset(int state);
+	
+	/**
+	 * Request that the rewriter take a number of steps (upto a given maximum).
+	 *
+	 * @return
+	 */
+	public void apply(int maxSteps);	
 }

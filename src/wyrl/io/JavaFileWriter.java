@@ -33,9 +33,6 @@ import java.math.BigInteger;
 import java.util.*;
 
 import wyautl.core.Automaton;
-import wyautl.rw.InferenceRule;
-import wyautl.rw.ReductionRule;
-import wyautl.rw.SimpleRewriteStrategy;
 import wyautl.util.BigRational;
 import wyfs.io.BinaryOutputStream;
 import wyrl.core.Attribute;
@@ -55,6 +52,7 @@ import static wyrl.core.SpecFile.*;
  *
  */
 public class JavaFileWriter {
+	
 	private PrintWriter out;
 	private final HashMap<String, Type.Term> terms = new HashMap<String, Type.Term>();
 
@@ -143,11 +141,11 @@ public class JavaFileWriter {
 		myOut("import wyautl.util.BigRational;");
 		myOut("import wyautl.io.*;");
 		myOut("import wyautl.core.*;");
-		myOut("import wyautl.rw.*;");
+		myOut("import wyrw.core.*;");
+		myOut("import wyrw.util.AbstractRewriteRule;");
 		myOut("import wyrl.core.*;");
 		myOut("import wyrl.util.Runtime;");
 		myOut("import wyrl.util.Pair;");
-		myOut("import wyrl.util.AbstractRewriteRule;");
 		myOut();
 	}
 
@@ -250,10 +248,6 @@ public class JavaFileWriter {
 		boolean isReduction = decl instanceof ReduceDecl;
 		Type param = decl.pattern.attribute(Attribute.Type.class).type;
 
-		if(decl.name != null) {
-			myOut(1, "// " + decl.name);
-		}
-
 		String className = isReduction ? "Reduction_" + reductionCounter++ : "Inference_" + inferenceCounter++;
 
 		if (isReduction) {
@@ -268,21 +262,34 @@ public class JavaFileWriter {
 		// Constructor
 		// ===============================================
 		myOut();
-		myOut(2,"public " + className + "(Pattern.Term pattern) { super(pattern); }");
+		myOut(2,"public " + className + "(Pattern.Term pattern) {");
+		myOut(3,"super(pattern);");
+		writeAnnotations(3,decl.annotations);
+		myOut(2,"}");
 
 		// ===============================================
 		// probe()
 		// ===============================================
 		myOut();
 
-		myOut(2,
-				"public final void probe(Automaton automaton, int root, List<Activation> activations) {");
+		if (isReduction) {
+			myOut(2, "public final void probe(Automaton automaton, int target, List<Reduction.Activation> activations) {");
+		} else {
+			myOut(2, "public final void probe(Automaton automaton, int root, int target, List<Inference.Activation> activations) {");
+		}
 		Environment environment = new Environment();
 		int thus = environment.allocate(param, "this");
-		myOut(3, "int r" + thus + " = root;");
+		myOut(3, "int r" + thus + " = target;");
 		int level = translatePatternMatch(3, decl.pattern, null, thus,
 				environment);
-
+		if (decl.requires != null) {
+			// FIXME: this is not necessarily always required
+			Environment reqEnvironment = new Environment();
+			reqEnvironment.allocate(param, "this");
+			translateStateUnpack(level,decl.pattern,thus,false,reqEnvironment);
+			int requires = translate(level, decl.requires, reqEnvironment, file);
+			myOut(level++, "if(r" + requires + ") { // REQUIRES");
+		}
 		// Add the appropriate activation
 		indent(level);
 		out.print("int[] state = {");
@@ -302,7 +309,11 @@ public class JavaFileWriter {
 		}
 		out.println("};");
 
-		myOut(level, "activations.add(new Activation(this,null,state));");
+		if(isReduction) {
+			myOut(level, "activations.add(new Reduction.Activation(this,null,state));");
+		} else {
+			myOut(level, "activations.add(new Inference.Activation(this,root,null,state));");
+		}
 
 		// close the pattern match
 		while (level > 2) {
@@ -314,15 +325,18 @@ public class JavaFileWriter {
 		// ===============================================
 
 		myOut();
-		myOut(2,
-				"public final int apply(Automaton automaton, int[] state) {");
+		if (isReduction) {
+			myOut(2, "public final int apply(Automaton automaton, int[] state) {");
+		} else {
+			myOut(2, "public final int apply(Automaton automaton, int root, int[] state) {");
+		}
 		myOut(3, "int nStates = automaton.nStates();");
 
 		// first, unpack the state
 		environment = new Environment();
 		thus = environment.allocate(param, "this");
 		myOut(3, "int r" + thus + " = state[0];");
-		translateStateUnpack(3, decl.pattern, thus, environment);
+		translateStateUnpack(3, decl.pattern, thus, true, environment);
 
 		// second, translate the individual rules
 		for (RuleDecl rd : decl.rules) {
@@ -333,27 +347,32 @@ public class JavaFileWriter {
 		myOut(3, "return Automaton.K_VOID;");
 		myOut(2, "}");
 
-		// ===============================================
-		// name() and rank()
-		// ===============================================
-
-		myOut(2, "public final String name() { return \"" + decl.name + "\"; }");
-		myOut(2, "public final int rank() { return " + decl.rank + "; }");
-
-		// ===============================================
-		// min / max reduction sizes
-		// ===============================================
-
 		myOut();
-		//
-		int minComplexity = RewriteComplexity.minimumChange(decl);
-		myOut(2, "public final int minimum() { return " + minComplexity + "; }");
-		//myOut(2, "public final int minimum() { return 0; }");
-		myOut(2, "public final int maximum() { return Integer.MAX_VALUE; }");
-
+		//		
 		myOut(1, "}"); // end class
 	}
 
+	protected void writeAnnotations(int level, Map<String,Object> annotations) {
+		for(Map.Entry<String, Object> e : annotations.entrySet()) {
+			String annotation = annotation2String(e.getValue());
+			myOut(level,"put(\"" + e.getKey() +"\"," + annotation + ");");
+		}
+	}
+	
+	protected String annotation2String(Object o) {
+		if(o == null) {
+			return "null";
+		} else if(o instanceof BigInteger) {
+			BigInteger i = (BigInteger) o;
+			return i.toString();
+		} else if(o instanceof String) {
+			String s = (String) o;
+			return "\"" + s + "\"";
+		} else {
+			throw new IllegalArgumentException("Unsupported annotation kind: " + o.getClass().getName());
+		}
+	}
+	
 	/**
 	 * Translate the test to see whether a pattern is accepted or not. A key
 	 * requirement of this translation procedure is that it does not allocate
@@ -864,40 +883,40 @@ public class JavaFileWriter {
 	 * @param environment
 	 */
 	protected void translateStateUnpack(int level, Pattern pattern, int source,
-			Environment environment) {
+			boolean unpack, Environment environment) {
 		if (pattern instanceof Pattern.Leaf) {
 			translateStateUnpack(level, (Pattern.Leaf) pattern, source,
-					environment);
+					unpack, environment);
 		} else if (pattern instanceof Pattern.Term) {
 			translateStateUnpack(level, (Pattern.Term) pattern, source,
-					environment);
+					unpack, environment);
 		} else if (pattern instanceof Pattern.BagOrSet) {
 			translateStateUnpack(level, (Pattern.BagOrSet) pattern, source,
-					environment);
+					unpack, environment);
 		} else {
 			translateStateUnpack(level, (Pattern.List) pattern, source,
-					environment);
+					unpack, environment);
 		}
 	}
 
 	protected void translateStateUnpack(int level, Pattern.Leaf pattern,
-			int source, Environment environment) {
+			int source, boolean unpack, Environment environment) {
 		// Don't need to do anything!!
 	}
 
 	protected void translateStateUnpack(int level, Pattern.Term pattern,
-			int source, Environment environment) {
+			int source, boolean unpack, Environment environment) {
 		if (pattern.data != null) {
 			int target = environment.allocate(Type.T_ANY(), pattern.variable);
-			if (pattern.variable != null) {
+			if (pattern.variable != null && unpack) {
 				myOut(level, "int r" + target + " = state[" + target + "]; // " + pattern.variable);
 			}
-			translateStateUnpack(level, pattern.data, target, environment);
+			translateStateUnpack(level, pattern.data, target, unpack, environment);
 		}
 	}
 
 	protected void translateStateUnpack(int level, Pattern.BagOrSet pattern,
-			int source, Environment environment) {
+			int source, boolean unpack, Environment environment) {
 
 		Pair<Pattern, String>[] elements = pattern.elements;
 		int[] indices = new int[elements.length];
@@ -907,31 +926,7 @@ public class JavaFileWriter {
 			int item = environment.allocate(Type.T_ANY(), p_name);
 			if (pattern.unbounded && (i + 1) == elements.length) {
 				if (p_name != null) {
-					String src = "s" + source;
-					myOut(level, "Automaton.Collection " + src
-							+ " = (Automaton.Collection) automaton.get(state["
-							+ source + "]);");
-					String array = src + "children";
-					myOut(level, "int[] " + array + " = new int[" + src
-							+ ".size() - " + i + "];");
-					String idx = "s" + source + "i";
-					String jdx = "s" + source + "j";
-					myOut(level, "for(int " + idx + "=0, " + jdx + "=0; " + idx
-							+ " != " + src + ".size();++" + idx + ") {");
-					if (i != 0) {
-						indent(level + 1);
-						out.print("if(");
-						for (int j = 0; j < i; ++j) {
-							if (j != 0) {
-								out.print(" || ");
-							}
-							out.print(idx + " == r" + indices[j]);
-						}
-						out.println(") { continue; }");
-					}
-					myOut(level + 1, array + "[" + jdx + "++] = " + src + ".get(" + idx
-							+ ");");
-					myOut(level, "}");
+					String array = extractUnboundedTail(i, level, source, indices, unpack);
 					if (pattern instanceof Pattern.Set) {
 						myOut(level, "Automaton.Set r" + item
 								+ " = new Automaton.Set(" + array + ");");
@@ -948,17 +943,59 @@ public class JavaFileWriter {
 			} else {
 				int index = environment.allocate(Type.T_VOID());
 				indices[i] = index;
-				if (p_name != null) {
+				if (p_name != null && unpack) {
 					myOut(level, "int r" + item + " = state[" + item + "]; // " + p_name);
 				}
-				myOut(level, "int r" + index + " = state[" + index + "];");
-				translateStateUnpack(level, p.first(), item, environment);
+				if(unpack) {
+					myOut(level, "int r" + index + " = state[" + index + "];");
+				}
+				translateStateUnpack(level, p.first(), item, unpack, environment);
 			}
 		}
 	}
 
+	/**
+	 * Extract all elements of an array which don't match any of the supplied
+	 * indices.
+	 * 
+	 * @param i
+	 * @param level
+	 * @param source
+	 * @param indices
+	 * @return
+	 */
+	private String extractUnboundedTail(int i, int level, int source, int[] indices, boolean unpack) {
+		String src = "c" + source;
+		if (unpack) {
+			myOut(level,
+					"Automaton.Collection " + src + " = (Automaton.Collection) automaton.get(state[" + source + "]);");
+		}
+		String array = src + "children";
+		myOut(level, "int[] " + array + " = new int[" + src
+				+ ".size() - " + i + "];");
+		String idx = "s" + source + "i";
+		String jdx = "s" + source + "j";
+		myOut(level, "for(int " + idx + "=0, " + jdx + "=0; " + idx
+				+ " != " + src + ".size();++" + idx + ") {");
+		if (i != 0) {
+			indent(level + 1);
+			out.print("if(");
+			for (int j = 0; j < i; ++j) {
+				if (j != 0) {
+					out.print(" || ");
+				}
+				out.print(idx + " == r" + indices[j]);
+			}
+			out.println(") { continue; }");
+		}
+		myOut(level + 1, array + "[" + jdx + "++] = " + src + ".get(" + idx
+				+ ");");
+		myOut(level, "}");
+		return array;
+	}
+
 	protected void translateStateUnpack(int level, Pattern.List pattern,
-			int source, Environment environment) {
+			int source, boolean unpack, Environment environment) {
 
 		Pair<Pattern, String>[] elements = pattern.elements;
 		for (int i = 0; i != elements.length; ++i) {
@@ -967,9 +1004,13 @@ public class JavaFileWriter {
 			if (pattern.unbounded && (i + 1) == elements.length) {
 				int target = environment.allocate(Type.T_VOID(), p_name);
 				if (p_name != null) {
-					myOut(level, "Automaton.List r" + target
-							+ " = ((Automaton.List) automaton.get(state["
-							+ source + "])).sublist(" + i + ");");
+					if (unpack) {
+						myOut(level, "Automaton.List r" + target
+								+ " = ((Automaton.List) automaton.get(state["
+								+ source + "])).sublist(" + i + ");");
+					} else {
+						myOut(level, "Automaton.List r" + target + " = l" + source + ";");
+					}
 				}
 
 				// NOTE: calling translate unpack here is strictly unnecessary
@@ -978,10 +1019,10 @@ public class JavaFileWriter {
 
 			} else {
 				int target = environment.allocate(Type.T_ANY(), p_name);
-				if (p_name != null) {
+				if (p_name != null && unpack) {
 					myOut(level, "int r" + target + " = state[" + target + "]; // " + p_name);
 				}
-				translateStateUnpack(level, p.first(), target, environment);
+				translateStateUnpack(level, p.first(), target, unpack, environment);
 			}
 		}
 	}
@@ -1050,7 +1091,11 @@ public class JavaFileWriter {
 		result = coerceFromValue(level, decl.result, result, environment);
 		int thus = environment.get("this");
 		myOut(level, "if(r" + thus + " != r" + result + ") {");
-		myOut(level + 1, "return automaton.rewrite(r" + thus + ", r" + result + ");");
+		if (isReduce || !wyrw.core.Inference.USE_SUBSTITUTION) {
+			myOut(level + 1, "return automaton.rewrite(r" + thus + ", r" + result + ");");
+		} else {
+			myOut(level + 1, "return automaton.substitute(root,r" + thus + ", r" + result + ");");
+		}
 		myOut(level, "}");
 		if (decl.condition != null) {
 			myOut(--level, "}");
@@ -1898,37 +1943,8 @@ public class JavaFileWriter {
 		myOut(1,
 				"// =========================================================================");
 		myOut();
-		myOut(1, "public static void main(String[] args) throws IOException {");
-		myOut(2, "try {");
-		myOut(3,
-				"PrettyAutomataReader reader = new PrettyAutomataReader(System.in,SCHEMA);");
-		myOut(3,
-				"PrettyAutomataWriter writer = new PrettyAutomataWriter(System.out,SCHEMA);");
-		myOut(3, "Automaton automaton = reader.read();");
-		myOut(3, "System.out.print(\"PARSED: \");");
-		myOut(3, "print(automaton);");
-		myOut(3, "IterativeRewriter.Strategy<InferenceRule> inferenceStrategy = new SimpleRewriteStrategy<InferenceRule>(automaton, inferences);");
-		myOut(3, "IterativeRewriter.Strategy<ReductionRule> reductionStrategy = new SimpleRewriteStrategy<ReductionRule>(automaton, reductions);");
-		myOut(3, "IterativeRewriter rw = new IterativeRewriter(automaton,inferenceStrategy, reductionStrategy, SCHEMA);");
-		myOut(3, "rw.apply();");
-		myOut(3, "System.out.print(\"REWROTE: \");");
-		myOut(3, "print(automaton);");
-		myOut(3, "System.out.println(\"\\n\\n=> (\" + rw.getStats() + \")\\n\");");
-		myOut(2, "} catch(PrettyAutomataReader.SyntaxError ex) {");
-		myOut(3, "System.err.println(ex.getMessage());");
-		myOut(2, "}");
-		myOut(1, "}");
-
-		myOut(1, "");
-		myOut(1, "static void print(Automaton automaton) {");
-		myOut(2, "try {");
-		myOut(3,
-				"PrettyAutomataWriter writer = new PrettyAutomataWriter(System.out,SCHEMA);");
-		myOut(3, "writer.write(automaton);");
-		myOut(3, "writer.flush();");
-		myOut(3, "System.out.println();");
-		myOut(2,
-				"} catch(IOException e) { System.err.println(\"I/O error printing automaton\"); }");
+		myOut(1, "public static void main(String[] args) throws IOException {");		
+		myOut(2, "new wyrl.ConsoleRewriter(SCHEMA,inferences,reductions).readEvaluatePrintLoop();");
 		myOut(1, "}");
 	}
 

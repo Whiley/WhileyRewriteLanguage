@@ -33,15 +33,15 @@ import wyautl.core.*;
 import wyautl.util.BigRational;
 
 public class PrettyAutomataReader {
-	private final InputStream input;
+	private final Reader input;
 	private final int[] lookaheads;
 	private final Schema schema;
 	private final HashMap<String,Integer> rSchema;
 	private int start,end;
 	private int pos;
 
-	public PrettyAutomataReader(InputStream reader, Schema schema) {
-		this.input = reader;
+	public PrettyAutomataReader(InputStream input, Schema schema) {
+		this.input = new InputStreamReader(input);
 		this.schema = schema;
 		this.rSchema = new HashMap<String,Integer>();
 		for(int i=0;i!=schema.size();++i) {
@@ -50,23 +50,33 @@ public class PrettyAutomataReader {
 		this.lookaheads = new int[2];
 	}
 
+	public PrettyAutomataReader(Reader reader, Schema schema) {
+		this.input = reader;
+		this.schema = schema;
+		this.rSchema = new HashMap<String,Integer>();
+		for(int i=0;i!=schema.size();++i) {
+			rSchema.put(schema.get(i).name, i);
+		}
+		this.lookaheads = new int[2];
+	}
+	
 	public Automaton read() throws IOException,SyntaxError {
 		Automaton automaton = new Automaton();
-		int root = parseState(automaton);
+		int root = parseState(automaton, new HashMap<String,Integer>());
 		automaton.setRoot(0,root);
 		return automaton;
 	}
 
-	protected int parseState(Automaton automaton) throws IOException, SyntaxError {
+	protected int parseState(Automaton automaton, Map<String,Integer> environment) throws IOException, SyntaxError {
 		skipWhiteSpace();
 		int lookahead = lookahead();
 
 		switch(lookahead) {
 			case '(':
-				return parseBracketed(automaton);
+				return parseBracketed(automaton, environment);
 			case '[':
 			case '{':
-				return parseCompound(automaton);
+				return parseCompound(automaton,environment);
 			case '-':
 				return parseNumber(automaton,true);
 			case '0':
@@ -82,27 +92,27 @@ public class PrettyAutomataReader {
 				return parseNumber(automaton,false);
 			case '\"':
 				return parseString(automaton);
+			case '\\':
+				return parseMu(automaton,environment);
 			default:
-				return parseTermOrBool(automaton);
+				return parseTermOrBool(automaton,environment);
 		}
 	}
 
-	protected int parseTermOrBool(Automaton automaton)
+	protected int parseTermOrBool(Automaton automaton, Map<String,Integer> environment)
 			throws IOException, SyntaxError {
-
-		// ======== parse identifier ===========
-		StringBuffer sb = new StringBuffer();
-		int lookahead;
-		while ((lookahead = lookahead()) != -1
-				&& Character.isJavaIdentifierPart((char) lookahead)) {
-			sb.append((char) next());
-		}
-		String name = sb.toString();
-
+		int myid = automaton.nStates();
+		automaton.add(null);
+		
+		String name = parseIdentifier();
+		
 		if(name.equals("true")) {
 			return automaton.add(Automaton.TRUE);
 		} else if(name.equals("false")) {
 			return automaton.add(Automaton.FALSE);
+		} else if(environment.containsKey(name)) {
+			// Connect the cyclic reference
+			return environment.get(name);
 		}
 
 		Integer kind = rSchema.get(name);
@@ -114,15 +124,26 @@ public class PrettyAutomataReader {
 		int data = -1;
 
 		if(type.child != null) {
-			data = parseState(automaton);
+			data = parseState(automaton,environment);
 		}
 
-		return automaton.add(new Automaton.Term(kind, data));
+		automaton.set(myid,new Automaton.Term(kind, data));
+		return myid;
 	}
 
-	protected int parseBracketed(Automaton automaton) throws IOException, SyntaxError {
+	private String parseIdentifier() throws IOException {
+		StringBuffer sb = new StringBuffer();
+		int lookahead;
+		while ((lookahead = lookahead()) != -1
+				&& Character.isJavaIdentifierPart((char) lookahead)) {
+			sb.append((char) next());
+		}
+		return sb.toString();
+	}
+
+	protected int parseBracketed(Automaton automaton, Map<String,Integer> environment) throws IOException, SyntaxError {
 		match('(');
-		int r = parseState(automaton);
+		int r = parseState(automaton,environment);
 		match(')');
 		return r;
 	}
@@ -164,6 +185,19 @@ public class PrettyAutomataReader {
 		}
 	}
 
+	protected int parseMu(Automaton automaton, Map<String,Integer> environment)
+			throws IOException, SyntaxError {
+		match('\\');
+		String id = parseIdentifier();
+		if(environment.containsKey(id)) {
+			throw new SyntaxError("duplicate variable declared (" + id + ")", pos, pos);
+		}
+		match('.');
+		environment = new HashMap<String,Integer>(environment);
+		environment.put(id, automaton.nStates());
+		return parseState(automaton,environment);
+	}
+	
 	protected int parseString(Automaton automaton)
 			throws IOException, SyntaxError {
 		StringBuffer sb = new StringBuffer();
@@ -177,8 +211,11 @@ public class PrettyAutomataReader {
 		return automaton.add(new Automaton.Strung(sb.toString()));
 	}
 
-	protected int parseCompound(Automaton automaton)
+	protected int parseCompound(Automaton automaton, Map<String,Integer> environment)
 			throws IOException, SyntaxError {
+		int myid = automaton.nStates();
+		automaton.add(null);
+		
 		int lookahead = next(); // skip opening brace
 
 		int kind;
@@ -212,7 +249,7 @@ public class PrettyAutomataReader {
 			} else {
 				firstTime = false;
 			}
-			children.add(parseState(automaton));
+			children.add(parseState(automaton,environment));
 			skipWhiteSpace();
 		}
 
@@ -231,12 +268,14 @@ public class PrettyAutomataReader {
 		}
 
 		if(kind == Automaton.K_LIST) {
-			return automaton.add(new Automaton.List(children));
+			automaton.set(myid,new Automaton.List(children));
 		} else if(kind == Automaton.K_BAG) {
-			return automaton.add(new Automaton.Bag(children));
+			automaton.set(myid,new Automaton.Bag(children));
 		} else {
-			return automaton.add(new Automaton.Set(children));
+			automaton.set(myid,new Automaton.Set(children));
 		}
+		
+		return myid;
 	}
 
 	protected int next() throws IOException {
@@ -288,5 +327,4 @@ public class PrettyAutomataReader {
 			this.end=end;
 		}
 	}
-
 }

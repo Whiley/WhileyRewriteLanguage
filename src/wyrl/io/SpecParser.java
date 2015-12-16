@@ -76,21 +76,15 @@ public class SpecParser {
 					// id can be null if the included file was already included
 					// elsewhere.
 					if(id != null) { decls.add(id); }
-				} else if(lookahead.text.equals("term")) {
-					decls.add(parseTermDecl());
-				} else if(lookahead.text.equals("define")) {
-					decls.add(parseTypeDecl());
-				} else if(lookahead.text.equals("function")) {
-					decls.add(parseFunctionDecl());
 				} else {
-					decls.add(parseRewriteDecl());
+					decls.add(parseDeclaration());
 				}
 			}
 		}
 
 		return new SpecFile(pkg, moduleName(), filename, decls);
 	}
-
+		
 	private String moduleName() {
 		String name = filename.getName();
 		int idx = name.lastIndexOf('.');
@@ -140,15 +134,68 @@ public class SpecParser {
 		return null;
 	}
 
-	private Decl parseTermDecl() {
+
+	public Decl parseDeclaration() {		
+		Map<String,Object> annotations = parseAnnotations();
+		Token lookahead = tokens.get(index);
+		if(lookahead.text.equals("term")) {
+			return parseTermDecl(annotations);
+		} else if(lookahead.text.equals("define")) {
+			return parseTypeDecl(annotations);
+		} else if(lookahead.text.equals("function")) {
+			return parseFunctionDecl(annotations);
+		} else {
+			return parseRewriteDecl(annotations);
+		}
+	}
+	
+	public Map<String,Object> parseAnnotations() {
+		Map<String,Object> annotations = new HashMap<String,Object>();
+		Token lookahead = tokens.get(index);
+		while(lookahead.text.startsWith("@")) {
+			Pair<String,Object> p = parseAnnotation();
+			annotations.put(p.first(),p.second());
+			index = index + 1;
+			lookahead = tokens.get(index);
+			skipWhiteSpace(true);
+		}
+		return annotations;
+	}
+	
+	public Pair<String,Object> parseAnnotation() {
+		AtIdentifier aid = matchAnnotation();
+		String id = aid.text.substring(1);
+		// Now, parse the value if present
+		Object value = null;
+		if(index < tokens.size() && tokens.get(index) instanceof LeftBrace) {
+			match(LeftBrace.class);
+			value = parseAnnotationValue();
+			match(RightBrace.class);
+		}
+		return new Pair<String,Object>(id,value);
+	}
+	
+	public Object parseAnnotationValue() {
+		Token lookahead = tokens.get(index);
+		if (lookahead instanceof Int) {
+			return match(Int.class).value;
+		} else if (lookahead instanceof Strung) {
+			return match(Strung.class).string;
+		} else {
+			syntaxError("expected annotation value", lookahead);
+			return null; // deadcode
+		}
+	}
+	
+	private Decl parseTermDecl(Map<String,Object> annotations) {
 		int start = index;
 		matchKeyword("term");
 		Type.Term data = parseTermType();
 		matchEndLine();
-		return new TermDecl(data, sourceAttr(start,index-1));
+		return new TermDecl(data, annotations, sourceAttr(start,index-1));
 	}
 
-	private Decl parseTypeDecl() {
+	private Decl parseTypeDecl(Map<String,Object> annotations) {
 		int start = index;
 		matchKeyword("define");
 		String name = matchIdentifier().text;
@@ -182,10 +229,10 @@ public class SpecParser {
 			type = Type.T_OR(types);
 		}
 
-		return new TypeDecl(name, type, isOpen, sourceAttr(start,index-1));
+		return new TypeDecl(name, type, isOpen, annotations, sourceAttr(start,index-1));
 	}
 
-	private Decl parseRewriteDecl() {
+	private Decl parseRewriteDecl(Map<String,Object> annotations) {
 		int start = index;
 		Token lookahead = tokens.get(index);
 		boolean reduce;
@@ -197,43 +244,31 @@ public class SpecParser {
 			reduce = false;
 		}
 		Pattern.Term pattern = (Pattern.Term) parsePatternTerm();
-		Pair<String,Integer> nameAndRank = parseNameAndRank();
+		Expr requires = parseRequiresClause();
 		match(Colon.class);
 		matchEndLine();
 		List<RuleDecl> rules = parseRuleBlock(1);
 
-		String name = nameAndRank.first();
-		int rank = nameAndRank.second();
-
 		if(reduce) {
-			return new ReduceDecl(pattern,rules,name,rank,sourceAttr(start,index-1));
+			return new ReduceDecl(pattern,requires,rules,annotations,sourceAttr(start,index-1));
 		} else {
-			return new InferDecl(pattern,rules,name,rank,sourceAttr(start,index-1));
+			return new InferDecl(pattern,requires,rules,annotations,sourceAttr(start,index-1));
 		}
 	}
 
-	private Pair<String,Integer> parseNameAndRank() {
-		String name = "";
-		int rank = 0;
+	private Expr parseRequiresClause() {
 		skipWhiteSpace(true);
-		Token lookahead = tokens.get(index);
-		if(lookahead.text.equals("name")) {
-			matchKeyword("name");
-			Strung s = match(Strung.class);
-			name = s.text.substring(1,s.text.length()-1);
+		if (index < tokens.size() && tokens.get(index).text.equals("requires")) {
+			matchKeyword("requires");
+			Expr result = parseCondition();
+			skipWhiteSpace(true); 
+			return result;
+		} else {
+			return null;
 		}
-		skipWhiteSpace(true);
-		lookahead = tokens.get(index);
-		if(lookahead.text.equals("rank")) {
-			matchKeyword("rank");
-			Int i = match(Int.class);
-			rank = i.value.intValue();
-		}
-
-		return new Pair<String,Integer>(name,rank);
 	}
-
-	private Decl parseFunctionDecl() {
+	
+	private Decl parseFunctionDecl(Map<String,Object> annotations) {
 		int start = index;
 		matchKeyword("function");
 		String name = matchIdentifier().text;
@@ -1193,6 +1228,17 @@ public class SpecParser {
 			}
 		}
 		syntaxError("keyword " + keyword + " expected.", t);
+		return null;
+	}
+
+	private AtIdentifier matchAnnotation() {
+		checkNotEof();
+		Token t = tokens.get(index);
+		if (t instanceof AtIdentifier) {			
+			index = index + 1;
+			return (AtIdentifier) t;
+		}
+		syntaxError("annotation expected.", t);
 		return null;
 	}
 
