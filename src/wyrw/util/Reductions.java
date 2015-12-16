@@ -40,7 +40,7 @@ public class Reductions {
 	public static void reduceOver(Automaton automaton, int start, int maxSteps, Schema schema, ReductionRule[] reductions,
 			Comparator<Rewrite.Activation> comparator) {
 		// Now, attempt to reduce as much as possible
-		IncrementalAutomatonMinimiser inc = new IncrementalAutomatonMinimiser(automaton);
+		IncrementalAutomatonMinimiser inc = new IncrementalAutomatonMinimiser(automaton,schema);
 		
 		boolean changed = true;
 		while (changed && maxSteps-- > 0) {
