@@ -634,21 +634,41 @@ public class Automata {
 	}
 
 	/**
+	 * <p>
 	 * Determine whether two bag states are equivalent. This is more challenging
-	 * than for either list or set states. As for sets we must identify that
-	 * every state in the first set has an equivalent state in the second set;
-	 * likewise, that every state in the second state has an equivalent state in
-	 * the first. However, we must also count the occurrences of a particular
-	 * state and its equivalents is the same in both as well.
+	 * than for either list or set states. To do this safely, we need to
+	 * determine whether there is a possible matching between the states of each
+	 * bag. This turns out to be relatively tricky algorithmic problem which
+	 * reduces to the problem of determining whether a perfect match exists in a
+	 * bipartite graph.
+	 * </p>
+	 * <p>
+	 * The algorithm presented here may be based on that of Kuhn, though I have
+	 * so far failed to find a reference for it. The approach is to traverse the
+	 * vertices in one bag from left to right. At each point, the algorithm
+	 * maintains a perfect matching for all vertices seen thus far. Then, at
+	 * each step, the goal is to extend this perfect matching by exactly two
+	 * vertices. The extension is done greedily if possible (i.e. take any
+	 * unmatched adjacent vertex if one exists). However, when we reach a
+	 * situation where we cannot greedily match then we attempt to "reconfigure"
+	 * the current match. This is done by searching for a reachable vertex
+	 * adjacent to an unmatched vertex. In such case, we can immediately
+	 * reconfigure the network and proceed to the next step.
+	 * </p>
+	 * <p>
+	 * Unfortunately, the presence of negative states complicates the whole
+	 * issue (as it often seems to do), and is one way in which this algorithm
+	 * departs from the normal.
+	 * </p>
 	 *
 	 * @param automaton
-	 *            Automaton in which the two states reside
+	 *            --- Automaton in which the two states reside
 	 * @param equivs
-	 *            Binary equivalence matrix.
+	 *            --- Binary equivalence matrix.
 	 * @param b1
-	 *            First bag state
+	 *            --- First bag state
 	 * @param b2
-	 *            Second bag state
+	 *            --- Second bag state
 	 * @return
 	 */
 	private final static boolean equivalent(Automaton automaton,
@@ -666,49 +686,116 @@ public class Automata {
 
 		int[] b1_children = b1.children;
 		int[] b2_children = b2.children;
-
+		// maps vertices in b2 to those they are matched against in b1
+		int[] matches = new int[b1_size];
+		Arrays.fill(matches, -1);
+		// Used to ensure no vertex is explored more than once during
+		// reconfiguration.
+		boolean[] visited = new boolean[b1_size];
+		
 		// For every state in s1
-		for (int k = 0; k != b1_size; ++k) {
-			int b1_child = b1_children[k];
-			int b1_count = 0;
-			// First, count the number of equivalent states to this state in b1.
-			// This is necessary so we can check the count is the same in b2.
-			for (int l = 0; l != b1_size; ++l) {
-				int b11_child = b1_children[l];
-				if (b1_child == b11_child
-						|| (b1_child >= 0 && b11_child >= 0 && equivs.get(
-								b1_child, b11_child))) {
-					// TODO: We could current iteration of outer loop early
-					// here, if first equivalent state is less than l. This
-					// would mean we'd already checked this equivalence class.
-					b1_count++;
+		for (int i = 0; i != b1_size; ++i) {
+			int b1_child = b1_children[i];
+			if(b1_child < 0) {
+				// In this case, we have to do something different.
+				if(!findNegativeMatch(i,b1_children,b2_children,equivs,matches)) {
+					return false;
 				}
-			}
-			// Second, count the number of equivalent states to this in b2, such
-			// that we can ensure the count is the same in both b1 and b2.
-			int b2_count = 0;
-			for (int l = 0; l != b2_size; ++l) {
-				int b2_child = b2_children[l];
-				if (b1_child == b2_child
-						|| (b1_child >= 0 && b2_child >= 0 && equivs.get(
-								b1_child, b2_child))) {
-					b2_count++;
+			} else {
+				Arrays.fill(visited,false);
+				if(!findMatch(i,b1_children,b2_children,equivs,matches,visited)) {
+					// If we can't find a match, then it's game over and we know for
+					// sure these two states are not equivalent.
+					return false;
 				}
-			}
-			// Check that the count matches.
-			if (b1_count != b2_count) {
-				return false;
 			}
 		}
-
-		// NOTE: unlike the case for Set, we don't need to perform the same
-		// calculation in the reverse direction. This is because the size of two
-		// bags must be identical and, hence, if the above loop passes we have
-		// checked all states in both directions already.
-
+		
 		return true;
 	}
 
+	/**
+	 * In this case, we have to find a state equivalent to some state of
+	 * negative kind. This can only happen if such states are identical and,
+	 * hence, we can greedily look for such a state which has not already been
+	 * matched.
+	 * 
+	 * @param i
+	 *            --- index in b1_children of state being matched
+	 * @param b1_children
+	 *            --- children of first state
+	 * @param b2_children
+	 *            --- children of second state
+	 * @param equivs
+	 *            --- current list of equivalences
+	 * @param matches
+	 *            --- current list of matches
+	 * @return
+	 */
+	private static boolean findNegativeMatch(int i, int[] b1_children, int[] b2_children, BinaryMatrix equivs, int[] matches) {
+		int b1_child = b1_children[i];
+		for(int j=0;j!=b2_children.length;++j) {
+			int b2_child = b2_children[j];
+			if(b1_child == b2_child && matches[j] == -1) {
+				matches[j] = i;
+				return true;
+			}
+		}
+		// Unable to find a suitable match
+		return false;
+	}
+	
+	/**
+	 * Attempt to find a match for a given state. In the case that this state is
+	 * adjacent to another which is unmatched, we can greedily match them
+	 * together. Otherwise, we search for an "augmenting path" which corresponds
+	 * (in this case) to a path from this state to another which is adjacent to
+	 * an unmatched state. If such a state can be found then we can reconfigure
+	 * the current matching to reflect this, hence freeing up an adjacent state
+	 * for this state to be matched against. Got it?
+	 * 
+	 * @param i
+	 *            --- index in b1_children of state being matched
+	 * @param b1_children
+	 *            --- children of first state
+	 * @param b2_children
+	 *            --- children of second state
+	 * @param equivs
+	 *            --- current list of equivalences
+	 * @param matches
+	 *            --- current list of matches
+	 * @param visited
+	 *            --- current indices of b1_children which have been explored
+	 *            during current attempt to find augmenting path.
+	 * @return
+	 */
+	private static boolean findMatch(int i, int[] b1_children, int[] b2_children, BinaryMatrix equivs, int[] matches,
+			boolean[] visited) {
+		visited[i] = true;
+		int b1_child = b1_children[i];
+		for(int j=0;j!=b2_children.length;++j) {
+			int b2_child = b2_children[j];
+			if(b2_child >= 0 && equivs.get(b1_child, b2_child)) {
+				int match = matches[j];
+				if(matches[j] == -1) {
+					// This indicates that b2_child is not matched, so we
+					// greedily match it.
+					matches[j] = i;
+					return true;
+				} else if(!visited[match] && findMatch(match,b1_children,b2_children,equivs,matches,visited)) {
+					// This is a vertex was not previously visited during the
+					// current search for an augmenting path, and we were able
+					// to find an augmenting path. Hence, we reconfigure the
+					// matches to reflect the inverted augmenting path.
+					matches[j] = i;
+					return true;
+				}
+			}
+		}
+		// We failed to find an augmenting path
+		return false;
+	}
+	
 	/**
 	 * <p>
 	 * This algorithm extends all of the current morphisms by a single place.
