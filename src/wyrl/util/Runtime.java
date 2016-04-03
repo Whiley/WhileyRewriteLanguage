@@ -26,12 +26,15 @@
 package wyrl.util;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.BitSet;
 import java.util.List;
+import java.util.Set;
 
 import wyautl.core.*;
 import wyautl.io.BinaryAutomataReader;
 import wyautl.io.PrettyAutomataWriter;
+import wyautl.util.BinaryMatrix;
 import wyfs.io.BinaryInputStream;
 import wyrl.core.Pattern;
 import wyrl.core.Type;
@@ -173,14 +176,10 @@ public class Runtime {
 	 *            term names to their kinds.
 	 * @return
 	 */
-	public static boolean accepts(Type type, Automaton automaton, int root,
-			Schema schema) {
-
-		// FIXME: this doesn't yet handle cyclic automata
-
+	public static boolean accepts(Type type, Automaton automaton, int root, Schema schema) {
 		Automaton type_automaton = type.automaton();
-		return accepts(type_automaton, type_automaton.getRoot(0), automaton,
-				root, schema);
+		BinaryMatrix assumptions = new BinaryMatrix(type_automaton.nStates(), automaton.nStates(), false);
+		return accepts(type_automaton, type_automaton.getRoot(0), automaton, root, schema, assumptions);
 	}
 
 	/**
@@ -211,14 +210,10 @@ public class Runtime {
 	 *            term names to their kinds.
 	 * @return
 	 */
-	public static boolean accepts(Type type, Automaton actual,
-			Automaton.State aState, Schema schema) {
-
-		// FIXME: this doesn't yet handle cyclic automata
-
+	public static boolean accepts(Type type, Automaton actual, Automaton.State aState, Schema schema) {
 		Automaton type_automaton = type.automaton();
-		return accepts(type_automaton, type_automaton.getRoot(0), actual,
-				aState, schema);
+		BinaryMatrix assumptions = new BinaryMatrix(type_automaton.nStates(),actual.nStates(),false);
+		return accepts(type_automaton, type_automaton.getRoot(0), actual, aState, schema, assumptions);
 	}
 
 	/**
@@ -245,15 +240,30 @@ public class Runtime {
 	 * @param schema
 	 *            -- The schema for the actual automaton which is used to map
 	 *            term names to their kinds.
+	 * @param assumptions
+	 *            -- A set of equivalences which are assumed to be true at this
+	 *            point. Such assumptions may turn out to be incorrect. However,
+	 *            they can also be used to break a recursive cycle between
+	 *            states.
 	 * @return
 	 */
-	private static boolean accepts(Automaton type, int tIndex,
-			Automaton actual, int aIndex, Schema schema) {
+	private static boolean accepts(Automaton type, int tIndex, Automaton actual, int aIndex, Schema schema, BinaryMatrix assumptions) {
 		Automaton.Term tState = (Automaton.Term) type.get(tIndex);
 		Automaton.State aState = actual.get(aIndex);
-		if (tState.kind == Types.K_Ref) {
+		if (tState.kind == Types.K_Ref) {			
 			Automaton.Term tTerm = (Automaton.Term) tState;
-			return accepts(type, tTerm.contents, actual, aState, schema);
+			int t_child = tTerm.contents;
+			if(t_child < 0 || aIndex < 0) {
+				return accepts(type, t_child, actual, aState, schema, assumptions);
+			} else if(assumptions.get(t_child, aIndex)) {
+				// This is a cache hit
+				return true;
+			} else {
+				assumptions.set(t_child, aIndex, true);
+				boolean r = accepts(type, t_child, actual, aState, schema, assumptions);
+				assumptions.set(t_child, aIndex, false);
+				return r;
+			}			
 		} else {
 			return false;
 		}
@@ -286,10 +296,15 @@ public class Runtime {
 	 * @param schema
 	 *            -- The schema for the actual automaton which is used to map
 	 *            term names to their kinds.
+	 * @param assumptions
+	 *            -- A set of equivalences which are assumed to be true at this
+	 *            point. Such assumptions may turn out to be incorrect. However,
+	 *            they can also be used to break a recursive cycle between
+	 *            states.
 	 * @return
 	 */
-	private static boolean accepts(Automaton type, int tIndex,
-			Automaton automaton, Automaton.State aState, Schema schema) {
+	private static boolean accepts(Automaton type, int tIndex, Automaton automaton, Automaton.State aState,
+			Schema schema, BinaryMatrix assumptions) {
 		Automaton.Term tState = (Automaton.Term) type.get(tIndex);
 
 		switch (tState.kind) {
@@ -308,34 +323,33 @@ public class Runtime {
 		case Types.K_Term:
 			if (aState instanceof Automaton.Term) {
 				Automaton.Term aTerm = (Automaton.Term) aState;
-				return accepts(type, tState, automaton, aTerm, schema);
+				return accepts(type, tState, automaton, aTerm, schema, assumptions);
 			}
 			return false;
 		case Types.K_Nominal:
-			return acceptsNominal(type, (Automaton.Term) tState, automaton,
-					aState, schema);
+			return acceptsNominal(type, (Automaton.Term) tState, automaton, aState, schema, assumptions);
 		case Types.K_Set:
 			if (aState instanceof Automaton.Set) {
 				Automaton.Set aSet = (Automaton.Set) aState;
-				return acceptsSetOrBag(type, tState, automaton, aSet, schema);
+				return acceptsSetOrBag(type, tState, automaton, aSet, schema, assumptions);
 			}
 			return false;
 		case Types.K_Bag:
 			if (aState instanceof Automaton.Bag) {
 				Automaton.Bag aBag = (Automaton.Bag) aState;
-				return acceptsSetOrBag(type, tState, automaton, aBag, schema);
+				return acceptsSetOrBag(type, tState, automaton, aBag, schema, assumptions);
 			}
 			return false;
 		case Types.K_List:
 			if (aState instanceof Automaton.List) {
 				Automaton.List aList = (Automaton.List) aState;
-				return acceptsList(type, tState, automaton, aList, schema);
+				return acceptsList(type, tState, automaton, aList, schema, assumptions);
 			}
 			return false;
 		case Types.K_Or:
-			return acceptsOr(type, tState, automaton, aState, schema);
+			return acceptsOr(type, tState, automaton, aState, schema, assumptions);
 		case Types.K_And:
-			return acceptsAnd(type, tState, automaton, aState, schema);
+			return acceptsAnd(type, tState, automaton, aState, schema, assumptions);
 		}
 
 		// This should be dead-code since all possible cases are covered above.
@@ -352,9 +366,9 @@ public class Runtime {
 	 * the actual state matches the given template.
 	 * </p>
 	 * <p>
-	 * The template for a term is given by
-	 * <code>Term[string,Type...]</code>, where the string identifies the
-	 * term's name and the remainder represents 0 or 1 substates.
+	 * The template for a term is given by <code>Term[string,Type...]</code>,
+	 * where the string identifies the term's name and the remainder represents
+	 * 0 or 1 substates.
 	 * </p>
 	 *
 	 * @param type
@@ -372,10 +386,15 @@ public class Runtime {
 	 * @param schema
 	 *            -- The schema for the actual automaton which is used to map
 	 *            term names to their kinds.
+	 * @param assumptions
+	 *            -- A set of equivalences which are assumed to be true at this
+	 *            point. Such assumptions may turn out to be incorrect. However,
+	 *            they can also be used to break a recursive cycle between
+	 *            states.
 	 * @return
 	 */
-	private static boolean accepts(Automaton type, Automaton.Term tState,
-			Automaton actual, Automaton.Term aTerm, Schema schema) {
+	private static boolean accepts(Automaton type, Automaton.Term tState, Automaton actual, Automaton.Term aTerm,
+			Schema schema, BinaryMatrix assumptions) {
 		Automaton.List list = (Automaton.List) type.get(tState.contents);
 		String expectedName = ((Automaton.Strung) type.get(list.get(0))).value;
 		String actualName = schema.get(aTerm.kind).name;
@@ -384,7 +403,7 @@ public class Runtime {
 		} else if (list.size() == 1) {
 			return aTerm.contents == Automaton.K_VOID;
 		} else {
-			return accepts(type, list.get(1), actual, aTerm.contents, schema);
+			return accepts(type, list.get(1), actual, aTerm.contents, schema, assumptions);
 		}
 	}
 
@@ -418,11 +437,15 @@ public class Runtime {
 	 * @param schema
 	 *            -- The schema for the actual automaton which is used to map
 	 *            term names to their kinds.
+	 * @param assumptions
+	 *            -- A set of equivalences which are assumed to be true at this
+	 *            point. Such assumptions may turn out to be incorrect. However,
+	 *            they can also be used to break a recursive cycle between
+	 *            states.
 	 * @return
 	 */
-	private static boolean acceptsSetOrBag(Automaton type,
-			Automaton.Term tState, Automaton automaton,
-			Automaton.Collection aSetOrBag, Schema schema) {
+	private static boolean acceptsSetOrBag(Automaton type, Automaton.Term tState, Automaton automaton,
+			Automaton.Collection aSetOrBag, Schema schema, BinaryMatrix assumptions) {
 
 		Automaton.List list = (Automaton.List) type.get(tState.contents);
 		Automaton.Collection collection = (Automaton.Collection) type.get(list
@@ -458,7 +481,7 @@ public class Runtime {
 					continue;
 				}
 				int aItem = aSetOrBag.get(j);
-				if (accepts(type, typeItem, automaton, aItem, schema)) {
+				if (accepts(type, typeItem, automaton, aItem, schema, assumptions)) {
 					matched.set(i, true);
 					found = true;
 					break;
@@ -477,7 +500,7 @@ public class Runtime {
 					continue;
 				}
 				int aItem = aSetOrBag.get(j);
-				if (!accepts(type, unboundedIndex, automaton, aItem, schema)) {
+				if (!accepts(type, unboundedIndex, automaton, aItem, schema, assumptions)) {
 					return false;
 				}
 			}
@@ -518,10 +541,15 @@ public class Runtime {
 	 * @param schema
 	 *            -- The schema for the actual automaton which is used to map
 	 *            term names to their kinds.
+	 * @param assumptions
+	 *            -- A set of equivalences which are assumed to be true at this
+	 *            point. Such assumptions may turn out to be incorrect. However,
+	 *            they can also be used to break a recursive cycle between
+	 *            states.
 	 * @return
 	 */
-	private static boolean acceptsList(Automaton type, Automaton.Term tState,
-			Automaton automaton, Automaton.List aList, Schema schema) {
+	private static boolean acceptsList(Automaton type, Automaton.Term tState, Automaton automaton, Automaton.List aList,
+			Schema schema, BinaryMatrix assumptions) {
 		Automaton.List list = (Automaton.List) type.get(tState.contents);
 		Automaton.Collection collection = (Automaton.Collection) type.get(list
 				.get(1));
@@ -545,7 +573,7 @@ public class Runtime {
 		for (int i = 0; i != minSize; ++i) {
 			int tItem = collection.get(i);
 			int aItem = aList.get(i);
-			if (!accepts(type, tItem, automaton, aItem, schema)) {
+			if (!accepts(type, tItem, automaton, aItem, schema, assumptions)) {
 				return false;
 			}
 		}
@@ -555,11 +583,10 @@ public class Runtime {
 		if (isUnbounded) {
 			for (int j = minSize; j != aList.size(); ++j) {
 				int aItem = aList.get(j);
-				if (!accepts(type, unboundedIndex, automaton, aItem, schema)) {
+				if (!accepts(type, unboundedIndex, automaton, aItem, schema, assumptions)) {
 					return false;
 				}
 			}
-
 		}
 
 		// If we get here, we're done.
@@ -595,37 +622,41 @@ public class Runtime {
 	 * @param schema
 	 *            -- The schema for the actual automaton which is used to map
 	 *            term names to their kinds.
+	 * @param assumptions
+	 *            -- A set of equivalences which are assumed to be true at this
+	 *            point. Such assumptions may turn out to be incorrect. However,
+	 *            they can also be used to break a recursive cycle between
+	 *            states.
 	 * @return
 	 */
-	private static boolean acceptsNominal(Automaton type,
-			Automaton.Term tState, Automaton automaton, Automaton.State aState,
-			Schema schema) {
+	private static boolean acceptsNominal(Automaton type, Automaton.Term tState, Automaton automaton,
+			Automaton.State aState, Schema schema, BinaryMatrix assumptions) {
 		Automaton.List l = (Automaton.List) type.get(tState.contents);
-		return accepts(type, l.get(1), automaton, aState, schema);
+		return accepts(type, l.get(1), automaton, aState, schema, assumptions);
 	}
 
-	private static boolean acceptsAnd(Automaton type, Automaton.Term tState,
-			Automaton automaton, Automaton.State aState, Schema schema) {
+	private static boolean acceptsAnd(Automaton type, Automaton.Term tState, Automaton automaton,
+			Automaton.State aState, Schema schema, BinaryMatrix assumptions) {
 		Automaton.Set set = (Automaton.Set) type.get(tState.contents);
 		for (int i = 0; i != set.size(); ++i) {
 			int element = set.get(i);
-			if (!accepts(type, element, automaton, aState, schema)) {
+			if (!accepts(type, element, automaton, aState, schema, assumptions)) {
 				return false;
 			}
 		}
 		return true;
 	}
 
-	private static boolean acceptsOr(Automaton type, Automaton.Term tState,
-			Automaton automaton, Automaton.State aState, Schema schema) {
+	private static boolean acceptsOr(Automaton type, Automaton.Term tState, Automaton automaton, Automaton.State aState,
+			Schema schema, BinaryMatrix assumptions) {
 
 		Automaton.Set set = (Automaton.Set) type.get(tState.contents);
 		for (int i = 0; i != set.size(); ++i) {
 			int element = set.get(i);
-			if (accepts(type, element, automaton, aState, schema)) {
+			if (accepts(type, element, automaton, aState, schema, assumptions)) {
 				return true;
 			}
 		}
 		return false;
-	}
+	}	
 }
