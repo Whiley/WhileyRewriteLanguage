@@ -144,6 +144,7 @@ public class JavaFileWriter {
 		myOut("import wyrw.core.*;");
 		myOut("import wyrw.util.AbstractRewriteRule;");
 		myOut("import wyrl.core.*;");
+		myOut("import wyrl.core.Type;");
 		myOut("import wyrl.util.Runtime;");
 		myOut("import wyrl.util.Pair;");
 		myOut();
