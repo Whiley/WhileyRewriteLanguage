@@ -43,6 +43,7 @@ public class Reduction extends AbstractRewrite {
 		int to;
 		if (target != Automaton.K_VOID && from != target) {
 			// Rule application produced an updated automaton
+			automaton.minimise();
 			automaton.compact(0);
 			to = addState(automaton);
 			if(to >= states.size()) {
