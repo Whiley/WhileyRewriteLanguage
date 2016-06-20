@@ -41,8 +41,9 @@ public class Reduction extends AbstractRewrite {
 		AbstractActivation a = state.activation(activation);
 		int target = a.apply(automaton);
 		int to;
-		if (target != Automaton.K_VOID && from != target) {
+		if (target != Automaton.K_VOID && a.target() != target) {
 			// Rule application produced an updated automaton
+			automaton.minimise();
 			automaton.compact(0);
 			to = addState(automaton);
 			if(to >= states.size()) {
