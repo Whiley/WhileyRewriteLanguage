@@ -10,93 +10,96 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.*;
 
-import wyautl.core.*;
+import wyautl.core.Automaton;
+import wyautl.core.Schema;
 import wyautl.io.PrettyAutomataReader;
 import wyautl.io.PrettyAutomataWriter;
 import wyrw.core.*;
-import wyrw.util.*;
+import wyrw.util.AbstractActivation;
+import wyrw.util.LinearRewriter;
+
 
 /**
  * Provides a general console-based interface for a given rewrite system. The
  * intention is that this interface can be reused by the generated rewriters.
- * 
+ *
  * @author David J. Pearce
  *
  */
 public class ConsoleRewriter {
-	
+
 	public enum RwMode { REDUCE, INFER };
-	
+
 	/**
 	 * Schema of rewrite system used in this session
 	 */
 	private final Schema schema;
-	
+
 	/**
 	 * Set of reduction rules for use in this session
 	 */
 	private final ReductionRule[] reductions;
-	
+
 	/**
 	 * Set of inference rules for use in this session
 	 */
 	private final InferenceRule[] inferences;
-	
-	
+
+
 	/**
 	 * Rewriter being used in this session
 	 */
 	private Rewriter rewriter;
-	
+
 	/**
 	 * Current rewrite being worked on in this session.
 	 */
 	private Rewrite rewrite;
-	
+
 	/**
 	 * State in rewrite where currently at in this session.
 	 */
 	private int HEAD;
-	
+
 	/**
 	 * List of indents being used
 	 */
 	private String[] indents = {};
-	
+
 	/**
 	 * Indicate whether or not to print term indices
 	 */
 	private boolean indices = true;
-	
+
 	/**
 	 * Enable rewrite caching
 	 */
 	private boolean caching = true;
-	
+
 	/**
 	 * Collapse reductions or not
 	 */
 	private boolean collapse = false;
-	
+
 	/**
 	 * Linear rewriter
 	 */
 	private boolean linear = true;
-	
+
 	/**
 	 * If true, generate verbose information about rewriting.
 	 */
 	private boolean verbose;
-	
+
 	public ConsoleRewriter(Schema schema, InferenceRule[] inferences, ReductionRule[] reductions) {
 		this.schema = schema;
 		this.inferences = inferences;
-		this.reductions = reductions;		
+		this.reductions = reductions;
 	}
-	
+
 	// =========================================================================
-	// Commands.  
-	// =========================================================================	
+	// Commands.
+	// =========================================================================
 	// Below here is the set of all commands recognised by the interface. If you
 	// want to add a new command, then add a public static function for it and
 	// an appropriate entry in the commands array.
@@ -118,7 +121,7 @@ public class ConsoleRewriter {
 			this.new Command("log",getMethod("printLog")),
 			this.new Command("reduce",getMethod("startReduce",String.class)),
 			this.new Command("infer",getMethod("startInfer",String.class)),
-			this.new Command("load",getMethod("loadRewrite",String.class)),			
+			this.new Command("load",getMethod("loadRewrite",String.class)),
 			this.new Command("grind",getMethod("grind",int.class)),
 			this.new Command("apply",getMethod("applyActivation",int.class)),
 			this.new Command("reset",getMethod("reset",int.class)),
@@ -133,15 +136,15 @@ public class ConsoleRewriter {
 		for(Command c : commands) {
 			System.out.println("\t" + c.keyword);
 		}
-	}	
-	
+	}
+
 	public void setVerbose(boolean verbose) {
 		verbose = true;
 	}
-	
+
 	public void print() {
 		try {
-			Rewrite.State state = rewrite.states().get(HEAD); 
+			Rewrite.State state = rewrite.states().get(HEAD);
 			PrettyAutomataWriter writer = new PrettyAutomataWriter(System.out,schema,indents);
 			writer.setIndices(indices);
 			// FIXME: this is clearly broken because it won't work for a
@@ -153,13 +156,13 @@ public class ConsoleRewriter {
 			for(int i=0;i!=state.size();++i) {
 				AbstractActivation activation = state.activation(i);
 				System.out.print("[" + i + "] ");
-				print(activation,state.step(i));	
+				print(activation,state.step(i));
 				System.out.println();
 			}
 			System.out.println("\nCurrent: " + HEAD + " (" + state.rank() + " / " + state.size() + " unvisited)");
 		} catch(IOException e) { System.err.println("I/O error printing automaton"); }
 	}
-	
+
 	private void print(AbstractActivation activation, Rewrite.Step step) {
 		if(activation.rule() instanceof InferenceRule) {
 			System.out.print("* ");
@@ -172,54 +175,54 @@ public class ConsoleRewriter {
 			System.out.print(" (" + step.after() + ")");
 		}
 	}
-	
+
 	public void printLog() {
 		List<Rewrite.Step> history = rewrite.steps();
 		for(int i = 0;i!=history.size();++i) {
 			System.out.print("[" + i + "] ");
-			Rewrite.Step step = history.get(i);			
+			Rewrite.Step step = history.get(i);
 			int before = step.before();
 			AbstractActivation activation = rewrite.states().get(before).activation(step.activation());
 			int after = step.after();
-			System.out.print(before + " => " + after);			
+			System.out.print(before + " => " + after);
 			System.out.println(" (" + activation.target() + ", " + activation.rule().annotation("name") + ")");
 		}
-	}		
-	
+	}
+
 	public void setIndent(String[] indents) {
 		this.indents = indents;
 	}
-	
+
 	public void setIndices(boolean indices) {
 		this.indices = indices;
 	}
-	
+
 	public void setCaching(boolean flag) {
 		this.caching = flag;
 	}
-	
+
 	public void setCollapse(boolean flag) {
 		this.collapse = flag;
 	}
-	
+
 	public void setLinear(boolean flag) {
 		this.linear = flag;
 	}
-	
+
 	public void loadRewrite(String input) throws Exception {
 		FileReader reader = new FileReader(input);
 		// THIS NEEDS TO BE FIXED!!
 		startRewrite(reader,RwMode.INFER);
 	}
-	
+
 	public void startReduce(String input) throws Exception {
 		startRewrite(new StringReader(input),RwMode.REDUCE);
 	}
-	
+
 	public void startInfer(String input) throws Exception {
 		startRewrite(new StringReader(input),RwMode.INFER);
 	}
-	
+
 	public void startRewrite(Reader input, RwMode mode) throws Exception {
 		PrettyAutomataReader reader = new PrettyAutomataReader(input, schema);
 		Automaton automaton = reader.read();
@@ -229,7 +232,7 @@ public class ConsoleRewriter {
 		rewriter.reset(HEAD);
 		print();
 	}
-	
+
 	private Rewrite constructRewrite(final Schema schema, final ReductionRule[] reductions,
 			InferenceRule[] inferences, RwMode mode) {
 		if (mode == RwMode.INFER) {
@@ -238,36 +241,36 @@ public class ConsoleRewriter {
 			return new Reduction(schema, null, reductions);
 		}
 	}
-	
+
 	private Rewriter constructRewriter(final Schema schema) {
-		return new LinearRewriter(rewrite,LinearRewriter.UNFAIR_HEURISTIC);		
+		return new LinearRewriter(rewrite,LinearRewriter.UNFAIR_HEURISTIC);
 	}
-	
+
 	private RewriteRule[] append(RewriteRule[] lhs, RewriteRule[] rhs) {
 		RewriteRule[] rules = new RewriteRule[lhs.length+rhs.length];
 		System.arraycopy(lhs, 0, rules, 0, lhs.length);
 		System.arraycopy(rhs, 0, rules, lhs.length, rhs.length);
 		return rules;
 	}
-	
+
 	public void applyActivation(int activation) {
 		// Yes, there is at least one activation left to try
-		HEAD = rewrite.step(HEAD, activation);		
+		HEAD = rewrite.step(HEAD, activation);
 		print();
 	}
-	
+
 	public void grind(int count) {
 		rewriter.apply(count);
 		print();
 	}
-	
+
 	public void reset(int id) {
-		HEAD = id;		
+		HEAD = id;
 	}
-	
+
 	// =========================================================================
 	// Read, Evaluate, Print loop
-	// =========================================================================	
+	// =========================================================================
 	// Below here is all the machinery for the REPL. You shouldn't need to touch
 	// this.
 
@@ -340,7 +343,7 @@ public class ConsoleRewriter {
 					e.printStackTrace();
 				} catch (IllegalArgumentException e) {
 					e.printStackTrace();
-				} catch (InvocationTargetException e) {				
+				} catch (InvocationTargetException e) {
 					printFullStackTrace(e);
 				}
 			}
@@ -351,7 +354,7 @@ public class ConsoleRewriter {
 	/**
 	 * This simply returns a reference to a given name. If the method doesn't
 	 * exist, then it will throw a runtime exception.
-	 * 
+	 *
 	 * @param name
 	 * @param paramTypes
 	 * @return
@@ -368,7 +371,7 @@ public class ConsoleRewriter {
 	 * Represents a given interface command in the railway. Each command
 	 * consists of an initial keyword, followed by zero or more parameters. The
 	 * class provides simplistic checking of option types.
-	 * 
+	 *
 	 * @author David J. Pearce
 	 *
 	 */
@@ -386,7 +389,7 @@ public class ConsoleRewriter {
 		 * not. Specifically, a command can match if it has the right number of
 		 * arguments, and the given command begins with the string command
 		 * provided.
-		 * 
+		 *
 		 * @param line
 		 * @return
 		 */
@@ -401,7 +404,7 @@ public class ConsoleRewriter {
 				return true;
 			}
 		}
-		
+
 		/**
 		 * Check whether a given line of text matches the command or not. For
 		 * this to be true, the number of arguments must match the expected
@@ -409,7 +412,7 @@ public class ConsoleRewriter {
 		 * the converted arguments is returned; otherwise, null is returned.
 		 * When we cannot convert a given argument because it has the wrong
 		 * type, a null entry is recorded to help with error reporting,
-		 * 
+		 *
 		 * @param line
 		 * @return
 		 */
@@ -432,7 +435,7 @@ public class ConsoleRewriter {
 		/**
 		 * Convert a string representation of this argument into an actual
 		 * object form. If this fails for some reason, then null is returned.
-		 * 
+		 *
 		 * @param token
 		 * @return
 		 */
@@ -477,8 +480,8 @@ public class ConsoleRewriter {
 				return null;
 			}
 		}
-	}	
-	
+	}
+
 	private static void printFullStackTrace(Throwable e) {
 		while(e != null) {
 			System.out.println(e.getMessage());
